@@ -22,7 +22,7 @@ void main(void)
 	mat3 normaMatrix = transpose(inverse(mat3(modelMatrix)));
 
 	OUT.texCoord = (textureMatrix * vec4(texCoord, 0.0, 1.0)).xy;
-	OUT.normal - normalize(normaMatrix * normalize(normal));
+	OUT.normal = normalize(normaMatrix * normalize(normal));
 
 	vec4 worldPos = (modelMatrix * vec4(position, 1));
 	OUT.worldPos = worldPos.xyz;

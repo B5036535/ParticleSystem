@@ -3,7 +3,7 @@
 uniform sampler2D diffuseTex;
 uniform samplerCube cubeTex;
 
-uniform vec3 cameroPos;
+uniform vec3 cameraPos;
 
 in Vertex
 {
@@ -18,7 +18,7 @@ out vec4 fragColour;
 void main(void)
 {
 	vec4 diffuse = texture(diffuseTex, IN.texCoord);
-	vec3 viewDir = normalize(cameroPos - IN.worldPos);
+	vec3 viewDir = normalize(cameraPos - IN.worldPos);
 	vec3 reflectDir = reflect(-viewDir, normalize(IN.normal));
 	vec4 reflectTex = texture(cubeTex, reflectDir);
 

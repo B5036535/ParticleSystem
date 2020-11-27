@@ -31,7 +31,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	}
 
 	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl");
-	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
+	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfragment.glsl");
 	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
 
 	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess())
@@ -171,8 +171,8 @@ void Renderer::DrawPointLights()
 	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform2f(glGetUniformLocation(pointlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
 
-	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
-	glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "inverseProjMatrix"), 1, false, invViewProj.values);
+	Matrix4 invProjView = (projMatrix * viewMatrix).Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "inverseProjView"), 1, false, invProjView.values);
 
 	UpdateShaderMatrices();
 

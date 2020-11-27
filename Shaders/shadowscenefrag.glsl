@@ -50,7 +50,9 @@ void main(void)
 		vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
 		float shadowZ = texture(shadowTex, biasCoord.xy).x;
 		if(shadowZ < biasCoord.z)
+		{
 			shadow = 0.0f;
+		}		
 	}
 
 	vec3 surface = (diffuse.rgb * lightColour.rgb);

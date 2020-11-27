@@ -33,8 +33,8 @@ void main(void)
 	vec3 wTangent = normalize(normalMatrix * normalize(tangent.xyz));
 
 	OUT.normal = wNormal;
-	OUT.tangent - wTangent;
-	OUT.binormal - cross(wNormal, wTangent) * tangent.w;
+	OUT.tangent = wTangent;
+	OUT.binormal = cross(wNormal, wTangent) * tangent.w;
 
 	vec4 worldPos = (modelMatrix * vec4(position, 1));
 	OUT.worldPos = worldPos.xyz;
