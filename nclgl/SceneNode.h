@@ -8,7 +8,7 @@
 class SceneNode
 {
 public:
-	SceneNode(Mesh* m = nullptr, Vector4 colour = Vector4(1.f, 1.f, 1.f, 1.f));
+	SceneNode(Mesh* m = NULL, Vector4 colour = Vector4(1.f, 1.f, 1.f, 1.f));
 	~SceneNode();
 
 	void SetTransform(const Matrix4& matrix) { transform = matrix; };

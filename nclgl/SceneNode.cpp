@@ -4,7 +4,7 @@ SceneNode::SceneNode(Mesh* m, Vector4 c)
 {
 	mesh = m;
 	colour = c;
-	parent = nullptr;
+	parent = NULL;
 	modelScale = Vector3(1.f, 1.f, 1.f);
 	boundingRadius = 1.0f;
 	distanceFromCamera = 0.0f;
