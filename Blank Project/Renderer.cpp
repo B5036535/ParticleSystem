@@ -9,11 +9,12 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	poster = new Poster();
 	building = new Building();
 
-	building->SetTransform(Matrix4::Translation(Vector3(0, 0, -100)));
-	poster->SetTransform(Matrix4::Translation(Vector3(0,0,-100)));
+	building->SetTransform(Matrix4::Translation(Vector3(0, 0, -50)));
+	poster->SetTransform(Matrix4::Translation(Vector3(0,0, -100)));
 	//root->AddChild(poster);
 
-	SetTextureRepeating(building->cubemap_skyscraper, true);
+	SetTextureRepeating(building->tex_skyscraper_side, true);
+	SetTextureRepeating(building->tex_skyscraper_top, true);
 
 	shader_poster = new Shader("vertPoster.glsl", "fragPoster.glsl");
 	shader_building = new Shader("vertBuilding.glsl", "fragBuilding.glsl");
@@ -22,6 +23,8 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 		return;
 	}
 
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 
 	init = true;
@@ -48,7 +51,7 @@ void Renderer::RenderScene()
 	glClearColor(0.2f,0.2f,0.2f,1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);	
 
-	//DrawPoster();
+	DrawPoster();
 	DrawBuilding();
 	//DrawNode(root);
 }
@@ -65,16 +68,21 @@ void Renderer::DrawPoster()
 	modelMatrix = poster->GetWorldTransform() * Matrix4::Scale(poster->GetModelScale());
 
 	UpdateShaderMatrices();
+
+	poster->Draw(*this);
 }
 
 void Renderer::DrawBuilding()
 {
 	BindShader(shader_building);
 
-	glUniform1i(glGetUniformLocation(shader_building->GetProgram(), "cubeTex"), 0);
+	glUniform1i(glGetUniformLocation(shader_building->GetProgram(), "sideTex"), 0);
+	glUniform1i(glGetUniformLocation(shader_building->GetProgram(), "topTex"), 1);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, building->cubemap_skyscraper);
+	glBindTexture(GL_TEXTURE_2D, building->tex_skyscraper_side);	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, building->tex_skyscraper_top);
 
 	modelMatrix = building->GetWorldTransform() * Matrix4::Scale(building->GetModelScale());
 	UpdateShaderMatrices();

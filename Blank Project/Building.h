@@ -9,7 +9,8 @@ public:
 
 	void Draw(const OGLRenderer& r) override;
 
-	GLuint cubemap_skyscraper;
+	GLuint tex_skyscraper_side;
+	GLuint tex_skyscraper_top;
 protected:
 	
 	GLuint tex_windows;
