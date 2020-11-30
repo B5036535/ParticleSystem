@@ -1,6 +1,6 @@
 #include "SceneNode.h"
 
-SceneNode::SceneNode(Mesh* m, Vector4 c)
+SceneNode::SceneNode(Mesh* m, Vector4 c, bool attatchShader)
 {
 	mesh = m;
 	colour = c;
@@ -9,6 +9,7 @@ SceneNode::SceneNode(Mesh* m, Vector4 c)
 	boundingRadius = 1.0f;
 	distanceFromCamera = 0.0f;
 	texture = 0;
+	hasShader = attatchShader;
 }
 
 SceneNode::~SceneNode()

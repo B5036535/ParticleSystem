@@ -138,11 +138,13 @@
   <ItemGroup>
     <ClCompile Include="BlankProject.cpp" />
     <ClCompile Include="Building.cpp" />
+    <ClCompile Include="CityBlock.cpp" />
     <ClCompile Include="Poster.cpp" />
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Building.h" />
+    <ClInclude Include="CityBlock.h" />
     <ClInclude Include="Poster.h" />
     <ClInclude Include="Renderer.h" />
   </ItemGroup>

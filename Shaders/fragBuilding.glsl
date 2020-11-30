@@ -2,6 +2,9 @@
 
 uniform sampler2D sideTex;
 uniform sampler2D topTex;
+
+
+
 in Vertex
 {
 	vec3 normal;

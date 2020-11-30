@@ -4,12 +4,15 @@
 #include "Vector4.h"
 #include "Mesh.h"
 #include <vector>
+#include "../nclgl/Shader.h"
 
 class SceneNode
 {
 public:
-	SceneNode(Mesh* m = NULL, Vector4 colour = Vector4(1.f, 1.f, 1.f, 1.f));
+	SceneNode(Mesh* m = NULL, Vector4 colour = Vector4(1.f, 1.f, 1.f, 1.f), bool attatchShader = false);
 	~SceneNode();
+
+	bool hasShader;
 
 	void SetTransform(const Matrix4& matrix) { transform = matrix; };
 	const Matrix4& GetTransform() const { return transform; };
@@ -41,6 +44,8 @@ public:
 	GLuint GetTexture() const { return texture; }
 	void SetTexture(GLuint tex) { texture = tex; }
 
+	Shader* GetShader() const { return shader; }
+
 	static bool CompareByCameraDistance(SceneNode* a, SceneNode* b)
 	{
 		return (a->distanceFromCamera < b->distanceFromCamera);
@@ -53,6 +58,7 @@ protected:
 	Matrix4 transform;
 	Vector3 modelScale;
 	Vector4 colour;
+	Shader* shader;
 	std::vector<SceneNode*> children;
 
 	float distanceFromCamera;
