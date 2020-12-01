@@ -24,9 +24,13 @@ protected:
 	CityBlock* block;
 	Wave* wave;
 
+	Mesh* quad_postProcess;
+	
 	Shader* shader_poster;
 	Shader* shader_building;
 	Shader* shader_wave;
+	Shader* shader_postprocess;
+	Shader* shader_scene;
 
 	Frustum frameFrustum;
 
@@ -38,12 +42,20 @@ protected:
 	GLuint tex_poster;
 	GLuint tex_noise;
 
+	GLuint heightTexture;
+	GLuint bufferFBO;
+	GLuint processFBO;
+	GLuint bufferColourTex[2];
+	GLuint bufferDepthTex;
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
 	void ClearNodeLists();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
+
+	void PresentScene();
+	void DrawPostProcess();
 
 	void FillBuffers();
 	void DrawPointLights();
