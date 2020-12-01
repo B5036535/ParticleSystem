@@ -7,6 +7,7 @@
 #include "Poster.h"
 #include "Building.h"
 #include "CityBlock.h"
+#include "Wave.h"
 
 class Renderer : public OGLRenderer	{
 public:
@@ -21,8 +22,11 @@ protected:
 	Building* building;
 	Poster* poster;
 	CityBlock* block;
+	Wave* wave;
+
 	Shader* shader_poster;
 	Shader* shader_building;
+	Shader* shader_wave;
 
 	Frustum frameFrustum;
 
@@ -31,9 +35,9 @@ protected:
 
 	GLuint tex_skyscraper_side;
 	GLuint tex_skyscraper_top;
+	GLuint tex_poster;
+	GLuint tex_noise;
 
-	void DrawPoster();
-	void DrawBuilding();
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();

@@ -139,14 +139,18 @@
     <ClCompile Include="BlankProject.cpp" />
     <ClCompile Include="Building.cpp" />
     <ClCompile Include="CityBlock.cpp" />
+    <ClCompile Include="Club.cpp" />
     <ClCompile Include="Poster.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Wave.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Building.h" />
     <ClInclude Include="CityBlock.h" />
+    <ClInclude Include="Club.h" />
     <ClInclude Include="Poster.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Wave.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

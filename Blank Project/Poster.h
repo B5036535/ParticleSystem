@@ -4,7 +4,7 @@
 class Poster : public SceneNode
 {
 public:
-	Poster();
+	Poster(Shader* shader, GLuint tex);
 	~Poster();
 
 	void Draw(const OGLRenderer& r) override;

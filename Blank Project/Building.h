@@ -9,6 +9,8 @@ public:
 
 	void Draw(const OGLRenderer& r) override;
 
+
+protected:
 	GLuint tex_skyscraper_side;
 	GLuint tex_skyscraper_top;
 
@@ -17,6 +19,4 @@ public:
 
 	const int NUM_OF_WINDOWS_PER_ROW = 32;
 	float ratio;
-protected:
-	
 };

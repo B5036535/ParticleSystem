@@ -11,7 +11,7 @@ CityBlock::CityBlock(Shader* s, GLuint tex_side, GLuint tex_top, int bpr)
 		{
 			building = new Building(shader, tex_side, tex_top);
 			AddChild(building);
-			building->SetTransform(Matrix4::Translation(Vector3(x, 0, z) * 22));
+			building->SetTransform(Matrix4::Translation(Vector3(x, 0, z) * 26));
 		}
 	}
 	hasShader = true;
