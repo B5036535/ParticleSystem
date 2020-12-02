@@ -1,10 +1,11 @@
 #include "Renderer.h"
 #include <algorithm>
+#include "../nclgl/Light.h"
+const int LIGHT_NUM = 1;
 
 Renderer::Renderer(Window &parent) : OGLRenderer(parent)	
 {
 	camera = new Camera(-11, 0, Vector3(0, 200, 50));
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 	tex_skyscraper_side = SOIL_load_OGL_texture(TEXTUREDIR"SkyScraper.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	tex_skyscraper_top = SOIL_load_OGL_texture(TEXTUREDIR"SkyScraperRoof.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
@@ -17,49 +18,50 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 
 	root = new SceneNode();
 	
+	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	quad_postProcess = Mesh::GenerateQuad();
 
-	glGenTextures(1, &bufferDepthTex);
-	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 
-	for (int i = 0; i < 2; ++i)
-	{
-		glGenTextures(1, &bufferColourTex[i]);
-		glBindTexture(GL_TEXTURE_2D, bufferColourTex[i]);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	}
+	GenerateScreenTexture(bufferDepthTex, true);
+	GenerateScreenTexture(bufferColourTex);
+	GenerateScreenTexture(bufferNormalTex);
+	GenerateScreenTexture(lightDiffuseTex);
+	GenerateScreenTexture(lightSpecularTex);
+
 
 	glGenFramebuffers(1, &bufferFBO);
-	glGenFramebuffers(1, &processFBO);
-
+	glGenFramebuffers(1, &pointLightFBO);
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
+	glDrawBuffers(2, buffers);
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0])
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
+	glDrawBuffers(2, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		return;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-
 	shader_poster = new Shader("vertPoster.glsl", "fragPoster.glsl");
 	shader_building = new Shader("vertBuilding.glsl", "fragBuilding.glsl");
 	shader_wave = new Shader("vertWave.glsl", "fragWave.glsl");
+	shader_pointlight = new Shader("vertPointLight.glsl", "fragPointLight.glsl");
+	shader_combine = new Shader("vertCombine.glsl", "fragCombine.glsl");
 	shader_postprocess = new Shader("vertTextured.glsl", "fragProcess.glsl");
-	shader_scene = new Shader("vertTextured.glsl", "fragTextured.glsl");
+	shader_scene = new Shader("vertBuffer.glsl", "fragBuffer.glsl");
 
-	if (!shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_postprocess->LoadSuccess() || !shader_scene->LoadSuccess())
+	if (!shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_pointlight->LoadSuccess() || !shader_combine->LoadSuccess() || !shader_postprocess->LoadSuccess() || !shader_scene->LoadSuccess())
 	{
 		return;
 	}
@@ -67,28 +69,36 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	//wave = new Wave(shader_wave, tex_noise);
 	//root->AddChild(wave);
 
-	//for (int x = 0; x < 5; x++)
-	//{
-	//	for (int z = 0; z < 5; z++)
-	//	{
-	//		block = new CityBlock(shader_building, tex_skyscraper_side, tex_skyscraper_top);
-	//		block->SetTransform(Matrix4::Translation(Vector3(x - 2.5f, 0, z - 5) * (5 * 26 + 5)));
-	//		root->AddChild(block);
-	//	}
-	//}
+	for (int x = 0; x < 5; x++)
+	{
+		for (int z = 0; z < 5; z++)
+		{
+			block = new CityBlock(shader_building, tex_skyscraper_side, tex_skyscraper_top);
+			block->SetTransform(Matrix4::Translation(Vector3(x - 2.5f, 0, z - 5) * (5 * 26 + 5)));
+			root->AddChild(block);
+		}
+	}
 
-	block = new CityBlock(shader_building, tex_skyscraper_side, tex_skyscraper_top);
-	block->SetTransform(Matrix4::Translation(Vector3(-.5f, 0, -3) * (5 * 26 + 5)));
-	root->AddChild(block);
+	root->SetTransform(Matrix4::Translation(Vector3(-100, 0, -100)));
 	//poster = new Poster(shader_poster, tex_poster);
 	//poster->SetTransform(Matrix4::Translation(Vector3(0, 0, -100)));
 	//root->AddChild(poster);
 
+	pointLights = new Light[LIGHT_NUM];
+
+
+	for (int i = 0; i < LIGHT_NUM; i++)
+	{
+		Light& l = pointLights[i];
+		l.SetPosition(Vector3(-rand() % 200, 100.0f, -rand() % 100));
+		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 1));
+		l.SetRadius(250.0f + (rand() % 250));
+	}
 
 
 
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -103,6 +113,8 @@ Renderer::~Renderer(void)
 	delete shader_poster;
 	delete shader_building;
 	delete shader_wave;
+	delete shader_pointlight;
+	delete shader_combine;
 	delete shader_postprocess;
 	delete shader_scene;
 
@@ -110,8 +122,12 @@ Renderer::~Renderer(void)
 	glDeleteTextures(1, &tex_skyscraper_side);
 	glDeleteTextures(1, &tex_skyscraper_top);
 
-	glDeleteTextures(2, bufferColourTex);
+	glDeleteTextures(1, &bufferColourTex);
+	glDeleteTextures(1, &bufferNormalTex);
 	glDeleteTextures(1, &bufferDepthTex);
+	glDeleteTextures(1, &lightDiffuseTex);
+	glDeleteTextures(1, &lightSpecularTex);
+
 	glDeleteFramebuffers(1, &bufferFBO);
 	glDeleteFramebuffers(1, &processFBO);
 }
@@ -119,6 +135,7 @@ Renderer::~Renderer(void)
 void Renderer::UpdateScene(float dt) 
 {
 	camera->UpdateCamera(dt);
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	viewMatrix = camera->BuildViewMatrix();
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
 	root->Update(dt);
@@ -126,14 +143,18 @@ void Renderer::UpdateScene(float dt)
 
 void Renderer::RenderScene()	
 {
+
 	BuildNodeLists(root);
 	SortNodeLists();
 	glClearColor(0.2f,0.2f,0.2f,1.0f);
-
 	DrawNodes();
-	DrawPostProcess();
-	PresentScene();
 	ClearNodeLists();
+
+	DrawPointLights();
+	CombineBuffers();
+
+	//DrawPostProcess();
+	//PresentScene();
 }
 
 
@@ -164,7 +185,7 @@ void Renderer::SortNodeLists()
 void Renderer::DrawNodes()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 	for (const auto& i : nodeList)
 		DrawNode(i);
@@ -194,43 +215,125 @@ void Renderer::ClearNodeLists()
 }
 
 
-void Renderer::DrawPostProcess()
+//void Renderer::DrawPostProcess()
+//{
+//	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
+//	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+//
+//	BindShader(shader_postprocess);
+//	modelMatrix.ToIdentity();
+//	viewMatrix.ToIdentity();
+//	projMatrix.ToIdentity();
+//	UpdateShaderMatrices();
+//
+//	glDisable(GL_DEPTH_TEST);
+//
+//	glActiveTexture(GL_TEXTURE0);
+//	glUniform1i(glGetUniformLocation(shader_postprocess->GetProgram(), "sceneTex"), 0);
+//
+//
+//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//	glEnable(GL_DEPTH_TEST);
+//}
+//
+void Renderer::GenerateScreenTexture(GLuint& into, bool depth)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glGenTextures(1, &into);
+	glBindTexture(GL_TEXTURE_2D, into);
 
-	BindShader(shader_postprocess);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	GLuint format = depth ? GL_DEPTH_COMPONENT24 : GL_RGBA8;
+	GLuint type = depth ? GL_DEPTH_COMPONENT : GL_RGBA;
+
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+//
+//void Renderer::PresentScene()
+//{
+//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+//	BindShader(shader_scene);
+//	modelMatrix.ToIdentity();
+//	viewMatrix.ToIdentity();
+//	projMatrix.ToIdentity();
+//	UpdateShaderMatrices();
+//	glActiveTexture(GL_TEXTURE0);
+//	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
+//	glUniform1i(glGetUniformLocation(shader_scene->GetProgram(), "diffuseTex"), 0);
+//	quad_postProcess->Draw();
+//}
+
+
+
+void Renderer::DrawPointLights()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	BindShader(shader_pointlight);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBlendFunc(GL_ONE, GL_ONE);
+	glCullFace(GL_FRONT);
+	glDepthFunc(GL_ALWAYS);
+	glDepthMask(GL_FALSE);
+
+	glUniform1i(glGetUniformLocation(shader_pointlight->GetProgram(), "depthTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
+	glUniform1i(glGetUniformLocation(shader_pointlight->GetProgram(), "normTex"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
+	glUniform3fv(glGetUniformLocation(shader_pointlight->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform2f(glGetUniformLocation(shader_pointlight->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
+
+	Matrix4 invProjView = (projMatrix * viewMatrix).Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(shader_pointlight->GetProgram(), "inverseProjView"), 1, false, invProjView.values);
+
+	UpdateShaderMatrices();
+
+	for (int i = 0; i < LIGHT_NUM; i++)
+	{
+		Light& l = pointLights[i];
+		SetShaderLight(l);
+		sphere->Draw();
+	}
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE);
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::CombineBuffers()
+{
+	BindShader(shader_combine);
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
 	projMatrix.ToIdentity();
 	UpdateShaderMatrices();
 
-	glDisable(GL_DEPTH_TEST);
-
+	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(glGetUniformLocation(shader_postprocess->GetProgram(), "sceneTex"), 0);
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
 
+	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "diffuseLight"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, lightDiffuseTex);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glEnable(GL_DEPTH_TEST);
+	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "specularLight"), 1);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
+
+	quad_postProcess->Draw();
 }
-
-
-void Renderer::PresentScene()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	BindShader(shader_scene);
-	modelMatrix.ToIdentity();
-	viewMatrix.ToIdentity();
-	projMatrix.ToIdentity();
-	UpdateShaderMatrices();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
-	glUniform1i(glGetUniformLocation(shader_scene->GetProgram(), "diffuseTex"), 0);
-	//quad_postProcess->Draw();
-}
-
-
 

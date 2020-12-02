@@ -24,11 +24,16 @@ protected:
 	CityBlock* block;
 	Wave* wave;
 
+	Light* pointLights;
+	Mesh* sphere;
+
 	Mesh* quad_postProcess;
 	
 	Shader* shader_poster;
 	Shader* shader_building;
 	Shader* shader_wave;
+	Shader* shader_combine;
+	Shader* shader_pointlight;
 	Shader* shader_postprocess;
 	Shader* shader_scene;
 
@@ -45,8 +50,12 @@ protected:
 	GLuint heightTexture;
 	GLuint bufferFBO;
 	GLuint processFBO;
-	GLuint bufferColourTex[2];
+	GLuint bufferColourTex;
 	GLuint bufferDepthTex;
+	GLuint bufferNormalTex;
+	GLuint pointLightFBO;
+	GLuint lightDiffuseTex;
+	GLuint lightSpecularTex;
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
