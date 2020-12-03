@@ -149,7 +149,6 @@ void Renderer::RenderScene()
 	glClearColor(0.2f,0.2f,0.2f,1.0f);
 	DrawNodes();
 	ClearNodeLists();
-
 	DrawPointLights();
 	CombineBuffers();
 
@@ -330,7 +329,7 @@ void Renderer::CombineBuffers()
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, lightDiffuseTex);
 
-	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "specularLight"), 1);
+	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "specularLight"), 2);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
