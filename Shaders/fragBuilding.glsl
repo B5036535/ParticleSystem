@@ -27,8 +27,6 @@ void main(void)
 		fragColour[0] = texture(sideTex, IN.texCoord + offset);
 	}
 
-	//mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
-	//vec3 normal = normalize(TBN * IN.normal);
 	fragColour[1] = vec4(IN.normal * 0.5 + 0.5, 1.0f);
 
 }

@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include <algorithm>
 #include "../nclgl/Light.h"
-const int LIGHT_NUM = 1;
+const int LIGHT_NUM = 40;
 
 Renderer::Renderer(Window &parent) : OGLRenderer(parent)	
 {
@@ -55,13 +55,13 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 
 	shader_poster = new Shader("vertPoster.glsl", "fragPoster.glsl");
 	shader_building = new Shader("vertBuilding.glsl", "fragBuilding.glsl");
+	shader_club = new Shader("vertClub.glsl", "fragClub.glsl");
 	shader_wave = new Shader("vertWave.glsl", "fragWave.glsl");
 	shader_pointlight = new Shader("vertPointLight.glsl", "fragPointLight.glsl");
 	shader_combine = new Shader("vertCombine.glsl", "fragCombine.glsl");
-	shader_postprocess = new Shader("vertTextured.glsl", "fragProcess.glsl");
-	shader_scene = new Shader("vertBuffer.glsl", "fragBuffer.glsl");
+	
 
-	if (!shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_pointlight->LoadSuccess() || !shader_combine->LoadSuccess() || !shader_postprocess->LoadSuccess() || !shader_scene->LoadSuccess())
+	if (!shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_club->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_pointlight->LoadSuccess() || !shader_combine->LoadSuccess())
 	{
 		return;
 	}
@@ -69,16 +69,18 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	//wave = new Wave(shader_wave, tex_noise);
 	//root->AddChild(wave);
 
-	for (int x = 0; x < 5; x++)
-	{
-		for (int z = 0; z < 5; z++)
-		{
-			block = new CityBlock(shader_building, tex_skyscraper_side, tex_skyscraper_top);
-			block->SetTransform(Matrix4::Translation(Vector3(x - 2.5f, 0, z - 5) * (5 * 26 + 5)));
-			root->AddChild(block);
-		}
-	}
+	//for (int x = 0; x < 5; x++)
+	//{
+	//	for (int z = 0; z < 5; z++)
+	//	{
+	//		block = new CityBlock(shader_building, tex_skyscraper_side, tex_skyscraper_top);
+	//		block->SetTransform(Matrix4::Translation(Vector3(x - 2.5f, 0, z - 5) * (5 * 26 + 5)));
+	//		root->AddChild(block);
+	//	}
+	//}
 
+	club = new Club(shader_club, shader_poster, tex_skyscraper_side, tex_poster);
+	root->AddChild(club);
 	root->SetTransform(Matrix4::Translation(Vector3(-100, 0, -100)));
 	//poster = new Poster(shader_poster, tex_poster);
 	//poster->SetTransform(Matrix4::Translation(Vector3(0, 0, -100)));
@@ -90,9 +92,9 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	for (int i = 0; i < LIGHT_NUM; i++)
 	{
 		Light& l = pointLights[i];
-		l.SetPosition(Vector3(-rand() % 200, 100.0f, -rand() % 100));
+		l.SetPosition(Vector3(-rand() % 400, 100.0f, -rand() % 400));
 		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 1));
-		l.SetRadius(250.0f + (rand() % 250));
+		l.SetRadius(20.0f + (rand() % 250));
 	}
 
 
@@ -112,11 +114,10 @@ Renderer::~Renderer(void)
 	
 	delete shader_poster;
 	delete shader_building;
+	delete shader_club;
 	delete shader_wave;
 	delete shader_pointlight;
 	delete shader_combine;
-	delete shader_postprocess;
-	delete shader_scene;
 
 	glDeleteTextures(1, &tex_poster);
 	glDeleteTextures(1, &tex_skyscraper_side);
@@ -151,9 +152,6 @@ void Renderer::RenderScene()
 	ClearNodeLists();
 	DrawPointLights();
 	CombineBuffers();
-
-	//DrawPostProcess();
-	//PresentScene();
 }
 
 
@@ -214,28 +212,7 @@ void Renderer::ClearNodeLists()
 }
 
 
-//void Renderer::DrawPostProcess()
-//{
-//	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
-//	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-//
-//	BindShader(shader_postprocess);
-//	modelMatrix.ToIdentity();
-//	viewMatrix.ToIdentity();
-//	projMatrix.ToIdentity();
-//	UpdateShaderMatrices();
-//
-//	glDisable(GL_DEPTH_TEST);
-//
-//	glActiveTexture(GL_TEXTURE0);
-//	glUniform1i(glGetUniformLocation(shader_postprocess->GetProgram(), "sceneTex"), 0);
-//
-//
-//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//	glEnable(GL_DEPTH_TEST);
-//}
-//
+
 void Renderer::GenerateScreenTexture(GLuint& into, bool depth)
 {
 	glGenTextures(1, &into);
@@ -252,21 +229,6 @@ void Renderer::GenerateScreenTexture(GLuint& into, bool depth)
 	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
-//
-//void Renderer::PresentScene()
-//{
-//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-//	BindShader(shader_scene);
-//	modelMatrix.ToIdentity();
-//	viewMatrix.ToIdentity();
-//	projMatrix.ToIdentity();
-//	UpdateShaderMatrices();
-//	glActiveTexture(GL_TEXTURE0);
-//	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
-//	glUniform1i(glGetUniformLocation(shader_scene->GetProgram(), "diffuseTex"), 0);
-//	quad_postProcess->Draw();
-//}
 
 
 
@@ -315,6 +277,8 @@ void Renderer::DrawPointLights()
 
 void Renderer::CombineBuffers()
 {
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
 	BindShader(shader_combine);
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();

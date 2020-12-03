@@ -8,6 +8,7 @@
 #include "Building.h"
 #include "CityBlock.h"
 #include "Wave.h"
+#include "Club.h"
 
 class Renderer : public OGLRenderer	{
 public:
@@ -23,6 +24,7 @@ protected:
 	Poster* poster;
 	CityBlock* block;
 	Wave* wave;
+	Club* club;
 
 	Light* pointLights;
 	Mesh* sphere;
@@ -31,12 +33,11 @@ protected:
 	
 	Shader* shader_poster;
 	Shader* shader_building;
+	Shader* shader_club;
 	Shader* shader_wave;
-	Shader* shader_combine;
 	Shader* shader_pointlight;
-	Shader* shader_postprocess;
-	Shader* shader_scene;
-
+	Shader* shader_combine;
+	
 	Frustum frameFrustum;
 
 	vector<SceneNode*> transparentNodeList;

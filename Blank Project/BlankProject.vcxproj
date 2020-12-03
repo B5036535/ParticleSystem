@@ -142,6 +142,7 @@
     <ClCompile Include="Club.cpp" />
     <ClCompile Include="Poster.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Roof.cpp" />
     <ClCompile Include="Wave.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +151,7 @@
     <ClInclude Include="Club.h" />
     <ClInclude Include="Poster.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Roof.h" />
     <ClInclude Include="Wave.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

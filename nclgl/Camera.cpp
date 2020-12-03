@@ -20,7 +20,7 @@ void Camera::UpdateCamera(float dt)
 	Vector3 forward = rotation * Vector3(0, 0, -1);
 	Vector3 right   = rotation * Vector3(1, 0, 0);
 
-	float speed = 30.0f * dt;
+	float speed = 50.0f * dt;
 
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_W))
 		position += forward * speed;
@@ -31,10 +31,36 @@ void Camera::UpdateCamera(float dt)
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_D))
 		position += right * speed;
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_SHIFT))
-		position.y -= speed;	
+		position.y -= speed;
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_SPACE))
 		position.y += speed;
 
+
+	//onTrack ? TrackMovement(speed) : FreeMovement(forward, right, speed);
+}
+
+void Camera::TrackMovement(float speed)
+{
+	//Vector3 dir = waypoints[currentWaypoint] - position;
+	//position += dir.Normalise * speed;
+	//
+	//currentWaypoint = dir.Length <= dist ? (currentWaypoint + 1) % waypoints.size() : currentWaypoint;
+}
+
+void Camera::FreeMovement(Vector3 forward, Vector3 right, float speed)
+{
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_W))
+		position += forward * speed;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_S))
+		position -= forward * speed;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_A))
+		position -= right * speed;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_D))
+		position += right * speed;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_SHIFT))
+		position.y -= speed;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_SPACE))
+		position.y += speed;
 }
 
 Matrix4 Camera::BuildViewMatrix()
