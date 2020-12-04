@@ -7,7 +7,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 {
 	camera = new Camera(-11, 0, Vector3(0, 200, 50));
 
-	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"Sky_NightTime01LF.tga", TEXTUREDIR"Sky_NightTime01RT.tga", TEXTUREDIR"Sky_NightTime01UP.tga", TEXTUREDIR"Sky_NightTime01DN.tga", TEXTUREDIR"Sky_NightTime01BK.tga", TEXTUREDIR"rusted_north.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"Sky_NightTime01LF.tga", TEXTUREDIR"Sky_NightTime01RT.tga", TEXTUREDIR"Sky_NightTime01UP.tga", TEXTUREDIR"Sky_NightTime01DN.tga", TEXTUREDIR"Sky_NightTime01BK.tga", TEXTUREDIR"Sky_NightTime01FT.tga", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	tex_skyscraper_side = SOIL_load_OGL_texture(TEXTUREDIR"SkyScraper.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	tex_skyscraper_top = SOIL_load_OGL_texture(TEXTUREDIR"SkyScraperRoof.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
@@ -268,14 +268,13 @@ void Renderer::SortNodeLists()
 
 void Renderer::DrawNodes()
 {
-	//glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 
 	for (const auto& i : nodeList)
 		DrawNode(i);
 
 	for (const auto& i : transparentNodeList)
 		DrawNode(i);
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 }
 
 

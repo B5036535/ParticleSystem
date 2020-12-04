@@ -8,7 +8,7 @@ Wave::Wave(Shader* s)
 	time = 0.0f;
 
 	modelScale = Vector3(0.03f, 3, 0.05f);
-	boundingRadius = 150.0f;
+	boundingRadius = 200.0f;
 }
 
 Wave::~Wave()

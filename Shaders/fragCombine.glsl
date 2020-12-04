@@ -10,6 +10,9 @@ in Vertex
 
 out vec4 fragColour[2];
 
+
+
+
 void main(void)
 {
 	vec3 diffuse = texture(diffuseTex, IN.texCoord).xyz;
