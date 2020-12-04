@@ -37,6 +37,7 @@ protected:
 
 	Mesh* quad_postProcess;
 	
+	Shader* shader_skybox;
 	Shader* shader_poster;
 	Shader* shader_building;
 	Shader* shader_club;
@@ -44,26 +45,37 @@ protected:
 	Shader* shader_wave;
 	Shader* shader_pointlight;
 	Shader* shader_combine;
+	Shader* shader_blur;
+	Shader* shader_bloom;
 	
 	Frustum frameFrustum;
 
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;
 
+	GLuint cubeMap;
 	GLuint tex_skyscraper_side;
 	GLuint tex_skyscraper_top;
 	GLuint tex_poster;
 	GLuint tex_noise;
 
-	GLuint heightTexture;
 	GLuint bufferFBO;
-	GLuint processFBO;
 	GLuint bufferColourTex;
 	GLuint bufferDepthTex;
 	GLuint bufferNormalTex;
+
 	GLuint pointLightFBO;
 	GLuint lightDiffuseTex;
 	GLuint lightSpecularTex;
+
+	GLuint blurFBO;
+	GLuint blurTex;
+
+	GLuint bloomFBO;
+	GLuint bloomColourTex;
+	GLuint bloomBlurTex;
+
+	void DrawCubeMap();
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
@@ -71,12 +83,10 @@ protected:
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
 
-	void PresentScene();
-	void DrawPostProcess();
 
-	void FillBuffers();
 	void DrawPointLights();
 	void CombineBuffers();
-
+	void Blur();
+	void Bloom();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
 };

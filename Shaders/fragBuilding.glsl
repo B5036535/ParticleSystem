@@ -18,13 +18,17 @@ out vec4 fragColour[2];
 
 void main(void)
 {
+vec4 HDRColour;
 	if(IN.normal.y != 0)
 	{
-		fragColour[0] = texture(topTex, IN.texCoord + offset);
+		HDRColour = texture(topTex, IN.texCoord + offset) * 2.0f;
+		fragColour[0] = HDRColour / (1+ HDRColour);
 	}
 	else
 	{
-		fragColour[0] = texture(sideTex, IN.texCoord + offset);
+		HDRColour = texture(sideTex, IN.texCoord + offset) * 2.0f;
+
+		fragColour[0] = HDRColour / (1+ HDRColour);
 	}
 
 	fragColour[1] = vec4(IN.normal * 0.5 + 0.5, 1.0f);

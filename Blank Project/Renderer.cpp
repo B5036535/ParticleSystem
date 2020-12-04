@@ -1,11 +1,13 @@
 #include "Renderer.h"
 #include <algorithm>
 #include "../nclgl/Light.h"
-const int LIGHT_NUM = 300;
+const int LIGHT_NUM = 50;
 
 Renderer::Renderer(Window &parent) : OGLRenderer(parent)	
 {
 	camera = new Camera(-11, 0, Vector3(0, 200, 50));
+
+	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR"Sky_NightTime01LF.tga", TEXTUREDIR"Sky_NightTime01RT.tga", TEXTUREDIR"Sky_NightTime01UP.tga", TEXTUREDIR"Sky_NightTime01DN.tga", TEXTUREDIR"Sky_NightTime01BK.tga", TEXTUREDIR"rusted_north.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	tex_skyscraper_side = SOIL_load_OGL_texture(TEXTUREDIR"SkyScraper.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	tex_skyscraper_top = SOIL_load_OGL_texture(TEXTUREDIR"SkyScraperRoof.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
@@ -22,16 +24,22 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	quad_postProcess = Mesh::GenerateQuad();
 
 	GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	GLenum blurBuffer[1] = { GL_COLOR_ATTACHMENT0 };
 
 	GenerateScreenTexture(bufferDepthTex, true);
 	GenerateScreenTexture(bufferColourTex);
 	GenerateScreenTexture(bufferNormalTex);
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
+	GenerateScreenTexture(blurTex);
+	GenerateScreenTexture(bloomColourTex);
+	GenerateScreenTexture(bloomBlurTex);
 
 
 	glGenFramebuffers(1, &bufferFBO);
 	glGenFramebuffers(1, &pointLightFBO);
+	glGenFramebuffers(1, &blurFBO);
+	glGenFramebuffers(1, &bloomFBO);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
@@ -50,9 +58,25 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		return;
 
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurTex, 0);
+	glDrawBuffers(1, blurBuffer);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bloomBlurTex, 0);
+	glDrawBuffers(2, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
+	shader_skybox = new Shader("vertSkybox.glsl", "fragSkybox.glsl");
 	shader_poster = new Shader("vertPoster.glsl", "fragPoster.glsl");
 	shader_building = new Shader("vertBuilding.glsl", "fragBuilding.glsl");
 	shader_club = new Shader("vertClub.glsl", "fragClub.glsl");
@@ -60,9 +84,11 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	shader_wave = new Shader("vertWave.glsl", "fragWave.glsl");
 	shader_pointlight = new Shader("vertPointLight.glsl", "fragPointLight.glsl");
 	shader_combine = new Shader("vertCombine.glsl", "fragCombine.glsl");
+	shader_blur = new Shader("vertCombine.glsl", "fragBLur.glsl");
+	shader_bloom = new Shader("vertCombine.glsl", "fragBloom.glsl");
 	
 
-	if (!shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_club->LoadSuccess() || !shader_roof->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_pointlight->LoadSuccess() || !shader_combine->LoadSuccess())
+	if (!shader_skybox->LoadSuccess() | !shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_club->LoadSuccess() || !shader_roof->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_pointlight->LoadSuccess() || !shader_combine->LoadSuccess())
 	{
 		return;
 	}
@@ -132,6 +158,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 
 	init = true;
@@ -141,6 +168,7 @@ Renderer::~Renderer(void)
 	delete camera;
 	delete root;
 	
+	delete shader_skybox;
 	delete shader_poster;
 	delete shader_building;
 	delete shader_club;
@@ -148,6 +176,10 @@ Renderer::~Renderer(void)
 	delete shader_wave;
 	delete shader_pointlight;
 	delete shader_combine;
+	delete shader_blur;
+	delete shader_bloom;
+
+	glDeleteTextures(1, &cubeMap);
 
 	glDeleteTextures(1, &tex_poster);
 	glDeleteTextures(1, &tex_skyscraper_side);
@@ -158,9 +190,14 @@ Renderer::~Renderer(void)
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteTextures(1, &lightDiffuseTex);
 	glDeleteTextures(1, &lightSpecularTex);
+	glDeleteTextures(1, &bloomColourTex);
+	glDeleteTextures(1, &bloomBlurTex);
+	glDeleteTextures(1, &blurTex);
 
 	glDeleteFramebuffers(1, &bufferFBO);
-	glDeleteFramebuffers(1, &processFBO);
+	glDeleteFramebuffers(1, &pointLightFBO);
+	glDeleteFramebuffers(1, &blurFBO);
+	glDeleteFramebuffers(1, &bloomFBO);
 }
 
 void Renderer::UpdateScene(float dt) 
@@ -174,17 +211,37 @@ void Renderer::UpdateScene(float dt)
 
 void Renderer::RenderScene()	
 {
-
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	DrawCubeMap();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	viewMatrix = camera->BuildViewMatrix();
+	UpdateShaderMatrices();
 	BuildNodeLists(root);
 	SortNodeLists();
 	glClearColor(0.2f,0.2f,0.2f,1.0f);
 	DrawNodes();
 	ClearNodeLists();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	DrawPointLights();
 	CombineBuffers();
+	Blur();
+	Bloom();
 }
 
 
+
+void Renderer::DrawCubeMap()
+{
+	glDepthMask(GL_FALSE);
+
+	BindShader(shader_skybox);
+	UpdateShaderMatrices();
+	quad_postProcess->Draw();
+
+	glDepthMask(GL_TRUE);
+}
 
 void Renderer::BuildNodeLists(SceneNode* from)
 {
@@ -211,15 +268,14 @@ void Renderer::SortNodeLists()
 
 void Renderer::DrawNodes()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	//glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 
 	for (const auto& i : nodeList)
 		DrawNode(i);
 
 	for (const auto& i : transparentNodeList)
 		DrawNode(i);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -253,7 +309,7 @@ void Renderer::GenerateScreenTexture(GLuint& into, bool depth)
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	GLuint format = depth ? GL_DEPTH_COMPONENT24 : GL_RGBA8;
+	GLuint format = depth ? GL_DEPTH_COMPONENT24 : GL_RGBA16;
 	GLuint type = depth ? GL_DEPTH_COMPONENT : GL_RGBA;
 
 	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
@@ -307,6 +363,7 @@ void Renderer::DrawPointLights()
 
 void Renderer::CombineBuffers()
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 	BindShader(shader_combine);
@@ -326,6 +383,56 @@ void Renderer::CombineBuffers()
 	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "specularLight"), 2);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
+
+	quad_postProcess->Draw();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::Blur()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	BindShader(shader_blur);
+
+
+	glActiveTexture(GL_TEXTURE0);
+
+
+	for (int i = 0; i < 2; i++)
+	{
+		glUniform1i(glGetUniformLocation(shader_blur->GetProgram(), "isVertical"), 0);
+		glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "sceneTex"), 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, bloomBlurTex);
+
+		quad_postProcess->Draw();
+
+		glUniform1i(glGetUniformLocation(shader_blur->GetProgram(), "isVertical"), 1);
+		glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "sceneTex"), 1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, blurTex);
+		quad_postProcess->Draw();
+
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::Bloom()
+{
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	BindShader(shader_bloom);
+
+	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "diffuseTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bloomColourTex);
+
+	glUniform1i(glGetUniformLocation(shader_combine->GetProgram(), "blurTex"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, blurTex);
 
 	quad_postProcess->Draw();
 }
