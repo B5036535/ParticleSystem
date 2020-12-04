@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include <algorithm>
 #include "../nclgl/Light.h"
-const int LIGHT_NUM = 40;
+const int LIGHT_NUM = 300;
 
 Renderer::Renderer(Window &parent) : OGLRenderer(parent)	
 {
@@ -56,45 +56,74 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	shader_poster = new Shader("vertPoster.glsl", "fragPoster.glsl");
 	shader_building = new Shader("vertBuilding.glsl", "fragBuilding.glsl");
 	shader_club = new Shader("vertClub.glsl", "fragClub.glsl");
+	shader_roof = new Shader("vertRoof.glsl", "fragRoof.glsl");
 	shader_wave = new Shader("vertWave.glsl", "fragWave.glsl");
 	shader_pointlight = new Shader("vertPointLight.glsl", "fragPointLight.glsl");
 	shader_combine = new Shader("vertCombine.glsl", "fragCombine.glsl");
 	
 
-	if (!shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_club->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_pointlight->LoadSuccess() || !shader_combine->LoadSuccess())
+	if (!shader_poster->LoadSuccess() || !shader_building->LoadSuccess() || !shader_club->LoadSuccess() || !shader_roof->LoadSuccess() || !shader_wave->LoadSuccess() || !shader_pointlight->LoadSuccess() || !shader_combine->LoadSuccess())
 	{
 		return;
 	}
 
-	//wave = new Wave(shader_wave, tex_noise);
-	//root->AddChild(wave);
 
-	//for (int x = 0; x < 5; x++)
-	//{
-	//	for (int z = 0; z < 5; z++)
-	//	{
-	//		block = new CityBlock(shader_building, tex_skyscraper_side, tex_skyscraper_top);
-	//		block->SetTransform(Matrix4::Translation(Vector3(x - 2.5f, 0, z - 5) * (5 * 26 + 5)));
-	//		root->AddChild(block);
-	//	}
-	//}
+	for (int x = 0; x < 7; x++)
+	{
+		for (int z = 0; z < 7; z++)
+		{
+			if (x == 1 && z == 1)
+			{
+				club = new Club(shader_club, shader_poster, shader_roof, tex_skyscraper_side, tex_poster);
+				club->SetTransform(Matrix4::Translation(Vector3(x - 2.5f, 0, z - 2.5f) * (5 * 26) + Vector3(50, 140, 50)));;
+				root->AddChild(club);
+			}
+			else if(x == 4 && z == 3)
+			{
+				bar = new Bar(shader_club, shader_wave, shader_roof, tex_skyscraper_side);
+				bar->SetTransform(Matrix4::Translation(Vector3(x - 2.5f , 0, z - 2.5f) * (5 * 26) + Vector3(50, 140, 50)) * Matrix4::Rotation(-90, Vector3(0,1,0)));
+				root->AddChild(bar);
+			}
+			else
+			{
+				block = new CityBlock(shader_building, tex_skyscraper_side, tex_skyscraper_top);
+				block->SetTransform(Matrix4::Translation(Vector3(x - 2.5f, 0, z - 2.5f) * (5 * 26 + 5)));
+				root->AddChild(block);
+			}
+		}
+	}
 
-	club = new Club(shader_club, shader_poster, tex_skyscraper_side, tex_poster);
-	root->AddChild(club);
+
 	root->SetTransform(Matrix4::Translation(Vector3(-100, 0, -100)));
-	//poster = new Poster(shader_poster, tex_poster);
-	//poster->SetTransform(Matrix4::Translation(Vector3(0, 0, -100)));
-	//root->AddChild(poster);
 
+	root->Update(0.0f);
 	pointLights = new Light[LIGHT_NUM];
+	lightNodesClub = club->GetLightNodes();
+	lightNodesBar = bar->GetLightNodes();
 
 
 	for (int i = 0; i < LIGHT_NUM; i++)
 	{
 		Light& l = pointLights[i];
-		l.SetPosition(Vector3(-rand() % 400, 100.0f, -rand() % 400));
-		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 1));
-		l.SetRadius(20.0f + (rand() % 250));
+
+		if(i < lightNodesClub.size())
+		{
+			l.SetPosition(lightNodesClub[i]->GetWorldTransform().GetPositionVector());
+			l.SetColour(lightNodesClub[i]->GetColour());
+			l.SetRadius(lightNodesClub[i]->radius);
+		}
+		else if (i < lightNodesBar.size() + lightNodesClub.size() && i >= lightNodesClub.size())
+		{
+			l.SetPosition(lightNodesBar[i - lightNodesClub.size()]->GetWorldTransform().GetPositionVector());
+			l.SetColour(lightNodesBar[i - lightNodesClub.size()]->GetColour());
+			l.SetRadius(lightNodesBar[i - lightNodesClub.size()]->radius);
+		}
+		else
+		{
+			l.SetPosition(Vector3(rand() % 7, 20.0f, rand() % 7) * Vector3(26 * 5, 1, 26 * 5) + Vector3(-250, 0, -250));
+			l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 1));
+			l.SetRadius(20.0f + (rand() % 250));
+		}
 	}
 
 
@@ -115,6 +144,7 @@ Renderer::~Renderer(void)
 	delete shader_poster;
 	delete shader_building;
 	delete shader_club;
+	delete shader_roof;
 	delete shader_wave;
 	delete shader_pointlight;
 	delete shader_combine;

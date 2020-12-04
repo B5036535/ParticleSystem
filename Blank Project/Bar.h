@@ -1,23 +1,25 @@
 #pragma once
 #include "../nclgl/SceneNode.h"
-#include "Poster.h"
 #include "Roof.h"
+#include "Wave.h"
 
-class Club : public SceneNode
+class Bar: public SceneNode
 {
 public:
-	Club(Shader* s, Shader* shader_poster, Shader* shader_roof, GLuint tex, GLuint tex_poster);
-	~Club();
+	Bar(Shader* s, Shader* shader_poster, Shader* shader_roof, GLuint tex);
+	~Bar();
 
 	void Draw(const OGLRenderer& r) override;
 
-
 	vector<LightNode*> GetLightNodes();
 
+
 protected:
-	Poster* poster;
+	Wave* wave;
 	Roof* roof;
 
+	int numOfLights;
+	
 	vector<LightNode*> lightNodes;
 	vector<LightNode*> tempLightNodes;
 

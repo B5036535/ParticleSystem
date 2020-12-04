@@ -16,12 +16,19 @@ out Vertex
 	vec3 pos;
 } OUT;
 
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
 void main(void)
 {
 	mat4 mvp = projMatrix * viewMatrix * modelMatrix;
 	vec3 pos = position;
 
-	pos.y = clamp(pos.y * sin(time *1.5f), 0.0f, 200.0f);
+	float randFloat = rand(texCoord) * 2 - 1;
+
+	pos.y = sin(randFloat + time); 
+	
 	
 
 	gl_Position = mvp * vec4(pos, 1.0);

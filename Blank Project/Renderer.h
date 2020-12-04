@@ -9,6 +9,7 @@
 #include "CityBlock.h"
 #include "Wave.h"
 #include "Club.h"
+#include "Bar.h"
 
 class Renderer : public OGLRenderer	{
 public:
@@ -25,6 +26,11 @@ protected:
 	CityBlock* block;
 	Wave* wave;
 	Club* club;
+	Bar* bar;
+
+
+	vector<LightNode*> lightNodesBar;
+	vector<LightNode*> lightNodesClub;
 
 	Light* pointLights;
 	Mesh* sphere;
@@ -34,6 +40,7 @@ protected:
 	Shader* shader_poster;
 	Shader* shader_building;
 	Shader* shader_club;
+	Shader* shader_roof;
 	Shader* shader_wave;
 	Shader* shader_pointlight;
 	Shader* shader_combine;

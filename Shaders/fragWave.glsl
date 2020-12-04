@@ -9,6 +9,6 @@ out vec4 fragColour;
 
 void main(void)
 {
-	fragColour = mix(vec4(0, 1.0f, 1.0f, 1.0f) , vec4(0.8, 0.4, 0, 1), IN.pos.y / 161.0f);
+	fragColour = mix(vec4(0, 1.0f, 1.0f, 1.0f) , vec4(0.8, 0.4, 0, 1), IN.pos.y /2 + 0.5);
 	fragColour.a = 0.5;
 }

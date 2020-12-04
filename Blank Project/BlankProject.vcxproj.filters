@@ -35,6 +35,12 @@
     <ClCompile Include="Roof.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LightNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Bar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -56,6 +62,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Roof.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LightNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Bar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

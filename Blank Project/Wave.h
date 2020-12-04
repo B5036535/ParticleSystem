@@ -5,7 +5,7 @@
 class Wave : public SceneNode
 {
 public:
-	Wave(Shader* shader, GLuint tex_noise);
+	Wave(Shader* shader);
 	~Wave();
 
 	void Draw(const OGLRenderer& r) override;
