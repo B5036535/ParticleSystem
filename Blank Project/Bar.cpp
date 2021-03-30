@@ -26,16 +26,7 @@ Bar::Bar(Shader* s, Shader* shader_poster, Shader* shader_roof, GLuint tex)
 	{
 		lightNodes.push_back(tempLightNodes[i]);
 	}
-	//tempLightPositions = roof->GetLightPositions();
-	//tempLightColours = roof->GetLightColours();
-	//tempLightRadii = roof->GetLightRadii();
-	//
-	//for (int i = 0; i < tempLightPositions.size(); i++)
-	//{
-	//	lightPositions.push_back(tempLightPositions[i]);
-	//	lightColours.push_back(tempLightColours[i]);
-	//	lightRadii.push_back(tempLightRadii[i]);
-	//}
+
 }
 
 Bar::~Bar()

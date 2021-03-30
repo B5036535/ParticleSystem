@@ -235,7 +235,7 @@ void Renderer::RenderScene()
 void Renderer::DrawCubeMap()
 {
 	glDepthMask(GL_FALSE);
-
+	
 	BindShader(shader_skybox);
 	UpdateShaderMatrices();
 	quad_postProcess->Draw();
