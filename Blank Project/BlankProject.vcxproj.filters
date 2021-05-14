@@ -17,57 +17,9 @@
     <ClCompile Include="BlankProject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Poster.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Building.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CityBlock.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Club.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Wave.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Roof.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LightNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Bar.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Poster.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Building.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CityBlock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Club.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Wave.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Roof.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LightNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Bar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
