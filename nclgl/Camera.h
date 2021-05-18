@@ -10,7 +10,7 @@ public:
 		yaw = 0.0f;
 		pitch = 0.0f;
 
-		onTrack = true;
+		onTrack = false;
 		currentWaypoint = 1;
 		dist = 5.0f;
 		
@@ -25,7 +25,7 @@ public:
 		yaw = y;
 		position = pos;
 
-		onTrack = true;
+		onTrack = false;
 		currentWaypoint = 1;
 		dist = 5.0f;
 		

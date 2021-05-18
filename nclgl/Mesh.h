@@ -34,7 +34,7 @@ enum MeshBuffer {
 	WEIGHTVALUE_BUFFER,		//new this year, weight values of vertices
 	WEIGHTINDEX_BUFFER,	//new this year, indices of weights
 
-	INDEX_BUFFER	,
+	INDEX_BUFFER,
 
 	MAX_BUFFER
 };
@@ -86,7 +86,6 @@ public:
 	bool GetSubMesh(int i, const SubMesh* s) const;
 	bool GetSubMesh(const std::string& name, const SubMesh* s) const;
 
-
 protected:
 	void	BufferData();
 
@@ -97,6 +96,11 @@ protected:
 
 
 	GLuint	arrayObject;
+
+	Vector2 offsets[100];
+
+
+	GLuint instanceVBO;
 
 	GLuint	bufferObject[MAX_BUFFER];
 
