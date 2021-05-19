@@ -50,6 +50,7 @@ public:
 	~Mesh(void);
 
 	void Draw();
+	void DrawInstance(int instances);
 	void DrawSubMesh(int i);
 
 	static Mesh*	GenerateTriangle();
@@ -97,10 +98,6 @@ protected:
 
 	GLuint	arrayObject;
 
-	Vector2 offsets[100];
-
-
-	GLuint instanceVBO;
 
 	GLuint	bufferObject[MAX_BUFFER];
 

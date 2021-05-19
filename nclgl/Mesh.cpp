@@ -59,17 +59,34 @@ Mesh* Mesh::GenerateTriangle()
 	return m;
 }
 
-void Mesh::Draw()	{
+void Mesh::Draw()	
+{
 	glBindVertexArray(arrayObject);
-	//if(bufferObject[INDEX_BUFFER]) {
-	//	glDrawElements(type, numIndices, GL_UNSIGNED_INT, 0);
-	//}
-	//else{
-	//	glDrawArrays(type, 0, numVertices);
-	//}
-
-	glDrawArraysInstanced(type, 0, numVertices, 100);
+	if(bufferObject[INDEX_BUFFER]) 
+	{
+		glDrawElements(type, numIndices, GL_UNSIGNED_INT, 0);
+	}
+	else
+	{
+		glDrawArrays(type, 0, numVertices);
+	}
 	glBindVertexArray(0);	
+}
+
+void Mesh::DrawInstance(int instances)
+{
+	glBindVertexArray(arrayObject);
+
+	if (bufferObject[INDEX_BUFFER]) 
+	{
+		glDrawElementsInstanced(type, numIndices, GL_UNSIGNED_INT, 0, instances);
+	}
+	else 
+	{
+		glDrawArraysInstanced(type, 0, numVertices, instances);
+	}
+	glBindVertexArray(0);
+
 }
 
 void Mesh::DrawSubMesh(int i) {
@@ -162,34 +179,6 @@ void	Mesh::BufferData()	{
 	if (weights) {		//Buffer weights data
 		UploadAttribute(&bufferObject[WEIGHTVALUE_BUFFER], numVertices, sizeof(Vector4), 4, WEIGHTVALUE_BUFFER, weights, "Weights");
 	}
-
-	int i = 0;
-	float offset = 0.1f;
-	for (int y = -10; y < 10; y += 2)
-	{
-		for (int x = -10; x < 10; x += 2)
-		{
-			Vector2 translation
-			(
-				(float)x / 10.f + offset
-				,
-				(float)y / 10.f + offset
-			);
-
-			offsets[i++] = translation;
-		}
-	}
-
-
-	glGenBuffers(1, &instanceVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2) * 100, &offsets[0], GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(4);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), 0);
-	glVertexAttribDivisor(4, 1);
-	glObjectLabel(GL_BUFFER, instanceVBO, -1, "Offset");
 
 
 	//Buffer weight indices data...uses a different function since its integers...

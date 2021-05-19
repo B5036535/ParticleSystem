@@ -7,33 +7,38 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	basicShader = new Shader("vertex_basicInstanced.glsl", "fragment_basic.glsl");
 	position = Vector3(0, 0, -50);
 	
-	//int i = 0;
-	//float offset = 0.1f;
-	//for(int y = -10; y < 10; y += 2)
-	//{
-	//	for (int x = -10; x < 10; x += 2)
-	//	{
-	//		Vector2 translation
-	//		(
-	//			(float)x / 10.f + offset
-	//			,
-	//			(float)y / 10.f + offset
-	//		);
 
-	//		offsets[i++] = translation;
-	//	}
+	//offsets[0] = Vector2(-20, 0);
+	//offsets[1] = Vector2( 20, 0);
+
+	int i = 0;
+
+	for (int y = 0; y < NUM_OF_ROWS; y++)
+	{
+		for (int x = 0; x < NUM_OF_COLS; x++)
+		{
+			float posX = -10.f + x * 2;
+			float posY = -10.f + y * 2;
+			offsets[i] = Vector2(posX, posY);
+			i++;
+		}
+	}
+
+	glGenBuffers(1, &SSBO_Test);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_Test);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, NUM_OF_INSTANCES * sizeof(Vector2), offsets, GL_STATIC_READ);
+
+	//int block = glGetUniformBlockIndex(basicShader->GetProgram(), "Test Block");
+	int slot = 6;
+	//glUniformBlockBinding(basicShader->GetProgram(), block, slot);
+	//for (int i = 0; i < NUM_OF_INSTANCES; i++)
+	//{
+	//	glBindBufferRange(GL_SHADER_STORAGE_BUFFER, slot, SSBO_Test, i, sizeof(Vector2));
 	//}
 
+	glBindBufferRange(GL_SHADER_STORAGE_BUFFER, slot, SSBO_Test, 0, sizeof(Vector2) * NUM_OF_INSTANCES);
+	//glBindBufferRange(GL_SHADER_STORAGE_BUFFER, slot, SSBO_Test, 1, sizeof(Vector2));
 
-	//glGenBuffers(1, &instanceVBO);
-	//glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2) * 100, &offsets[0], GL_STATIC_DRAW);
-
-	//glEnableVertexAttribArray();
-	//glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), 0);
-	//glVertexAttribDivisor(2, 1);
-	//glObjectLabel(GL_BUFFER, instanceVBO, -1, "Offset");
 
 
 	if (!basicShader->LoadSuccess()) {
@@ -42,7 +47,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	init = true;
 }
-Renderer::~Renderer(void) {
+Renderer::~Renderer(void) 
+{
 	delete camera;
 	delete triangle;
 	delete basicShader;
@@ -63,6 +69,6 @@ void Renderer::RenderScene()
 	BindShader(basicShader);
 	Matrix4 model = Matrix4::Translation(position) * Matrix4::Scale(Vector3(1, 1, 1));
 	glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, model.values);
-	triangle->Draw();
+	triangle->DrawInstance(NUM_OF_INSTANCES);
 }
 
