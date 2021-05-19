@@ -52,6 +52,7 @@ Renderer::~Renderer(void)
 	delete camera;
 	delete triangle;
 	delete basicShader;
+	delete basicComputeShader;
 }
 
 void Renderer::UpdateScene(float dt) 

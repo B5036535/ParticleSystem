@@ -18,7 +18,9 @@ protected:
 	Mesh* triangle;
 	Vector3 position;
 	Vector2 offsets[NUM_OF_INSTANCES];
+
 	Shader* basicShader;
+	Shader* basicComputeShader;
 
 
 	GLuint SSBO_Test;
