@@ -2,7 +2,7 @@
 #include "../NCLGL/OGLRenderer.h"
 #include "../nclgl/Camera.h"
 #include "../nclgl/Frustum.h"
-
+#include "../nclgl/ComputeShader.h"
 class Renderer : public OGLRenderer {
 public:
 	Renderer(Window& parent);
@@ -20,7 +20,7 @@ protected:
 	Vector2 offsets[NUM_OF_INSTANCES];
 
 	Shader* basicShader;
-	Shader* basicComputeShader;
+	ComputeShader* basicComputeShader;
 
 
 	GLuint SSBO_Test;

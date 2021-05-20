@@ -5,6 +5,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	triangle = Mesh::GenerateTriangle();
 	basicShader = new Shader("vertex_basicInstanced.glsl", "fragment_basic.glsl");
+	basicComputeShader = new ComputeShader("compute_basic.glsl");
+
 	position = Vector3(0, 0, -50);
 	
 
@@ -26,7 +28,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	glGenBuffers(1, &SSBO_Test);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_Test);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, NUM_OF_INSTANCES * sizeof(Vector2), offsets, GL_STATIC_READ);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, NUM_OF_INSTANCES * sizeof(Vector2), offsets, GL_STREAM_DRAW);
 
 	//int block = glGetUniformBlockIndex(basicShader->GetProgram(), "Test Block");
 	int slot = 6;
@@ -58,16 +60,19 @@ Renderer::~Renderer(void)
 void Renderer::UpdateScene(float dt) 
 {
 	camera->UpdateCamera(dt);
+	glUseProgram(basicComputeShader->GetProgram());
+	basicComputeShader->Dispatch(NUM_OF_INSTANCES, 1, 1);
+	glUseProgram(0);
 }
 
 void Renderer::RenderScene() 
 {
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
+	BindShader(basicShader);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	viewMatrix = camera->BuildViewMatrix();
 	UpdateShaderMatrices();
-	BindShader(basicShader);
 	Matrix4 model = Matrix4::Translation(position) * Matrix4::Scale(Vector3(1, 1, 1));
 	glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, model.values);
 	triangle->DrawInstance(NUM_OF_INSTANCES);
