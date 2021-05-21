@@ -19,8 +19,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	{
 		for (int x = 0; x < NUM_OF_COLS; x++)
 		{
-			float posX = -10.f + x * 2;
-			float posY = -10.f + y * 2;
+			float posX = -100.f + x * 2;
+			float posY = -100.f + y * 2;
 			offsets[i] = Vector2(posX, posY);
 			i++;
 		}
