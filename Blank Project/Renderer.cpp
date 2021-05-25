@@ -1,7 +1,7 @@
 #include "Renderer.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	camera = new Camera(0, 0, Vector3(0, 0, 0));
+	camera = new Camera(0, 0, Vector3(0, 0, 10));
 
 	triangle = Mesh::GenerateTriangle();
 	quad = Mesh::GenerateQuad();
@@ -65,7 +65,7 @@ Renderer::~Renderer(void)
 void Renderer::UpdateScene(float dt) 
 {
 	camera->UpdateCamera(dt);
-	particleSystem->Update(dt);
+	//particleSystem->Update(dt);
 	//glUseProgram(basicComputeShader->GetProgram());
 	//basicComputeShader->Dispatch(NUM_OF_INSTANCES, 1, 1);
 	//glUseProgram(0);
@@ -77,7 +77,7 @@ void Renderer::RenderScene()
 	glClear(GL_COLOR_BUFFER_BIT);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	viewMatrix = camera->BuildViewMatrix();
-	modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(10000000, 10000000, 1));
+	modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(1, 1, 1));
 	particleSystem->Render(modelMatrix, viewMatrix, projMatrix);
 }
 

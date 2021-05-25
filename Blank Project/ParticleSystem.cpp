@@ -35,7 +35,7 @@ void ParticleSystem::Initialize()
 		particles[i].colour		= Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 		particles[i].force		= Vector3(0, -9.81f,0);
 		particles[i].position	= Vector3(0,0,0);
-		particles[i].velocity	= Vector3(sin((float)1 / NUMBER_OF_INSTANCES), 1000.f, cos((float)1 / NUMBER_OF_INSTANCES));
+		particles[i].velocity	= Vector3(sin(i * PI * 2 / NUMBER_OF_INSTANCES), 0, cos(i * PI * 2 / NUMBER_OF_INSTANCES)) * 0.0001;
 		particles[i].lifeTime	= MAX_LIFE_TIME;
 	}
 
@@ -68,7 +68,7 @@ void ParticleSystem::Update(float dt)
 void ParticleSystem::Render(Matrix4 model, Matrix4 view, Matrix4 projection)
 {
 	glUseProgram(shader_instance->GetProgram());
-	glUniform1i(glGetUniformLocation(shader_compute->GetProgram(), "SSBOswitch"), SSBOswitch);
+	glUniform1i(glGetUniformLocation(shader_instance->GetProgram(), "SSBOswitch"), SSBOswitch);
 	glUniformMatrix4fv(glGetUniformLocation(shader_instance->GetProgram(), "modelMatrix"), 1, false, model.values);
 	glUniformMatrix4fv(glGetUniformLocation(shader_instance->GetProgram(), "viewMatrix"), 1, false, view.values);
 	glUniformMatrix4fv(glGetUniformLocation(shader_instance->GetProgram(), "projMatrix"), 1, false, projection.values);
