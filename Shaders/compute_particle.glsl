@@ -2,7 +2,7 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-uniform int SSBOswitch;
+uniform bool SSBOswitch;
 uniform float dt;
 
 struct Particle
@@ -31,12 +31,11 @@ float Random(vec2 co)
 
 void ResetParticle()
 {
-
 }
 
 void IntegrateAcceleration()
 {
-	if(SSBOswitch == 1)
+	if(SSBOswitch)
 	{
 		vec3 dVel = particlesA.particles[gl_GlobalInvocationID.x].force * dt;
 		vec3 vel = particlesA.particles[gl_GlobalInvocationID.x].velocity + dVel;
@@ -53,7 +52,7 @@ void IntegrateAcceleration()
 
 void IntegreatVelocity()
 {
-	if(SSBOswitch == 1)
+	if(SSBOswitch)
 	{
 		vec3 dPos = particlesA.particles[gl_GlobalInvocationID.x].velocity * dt;
 		vec3 pos = particlesA.particles[gl_GlobalInvocationID.x].position + dPos;
@@ -72,9 +71,9 @@ void CalculateColour()
 {
 	float red = sin(particlesA.particles[gl_GlobalInvocationID.x].velocity.y);
 	float green = cos(particlesA.particles[gl_GlobalInvocationID.x].velocity.y);
-	float blue = sin(particlesA.particles[gl_GlobalInvocationID.x].velocity.y * 10);
+	float blue = 1;
 
-	if(SSBOswitch == 1)
+	if(SSBOswitch)
 	{
 
 		particlesB.particles[gl_GlobalInvocationID.x].colour = vec4(red,green,blue,1);
@@ -90,4 +89,5 @@ void main(void)
 {
 	IntegrateAcceleration();
 	IntegreatVelocity();
+	CalculateColour();
 }

@@ -30,7 +30,7 @@ public:
 	void Render(Matrix4 model, Matrix4 view, Matrix4 projection);
 private:
 
-	const int	NUMBER_OF_INSTANCES = 100000;
+	const int	NUMBER_OF_INSTANCES = 1;
 
 	const float	MAX_LIFE_TIME;
 
@@ -39,6 +39,7 @@ private:
 
 	Shader*			shader_instance;
 	ComputeShader*	shader_compute;
+
 
 
 	void Initialize();

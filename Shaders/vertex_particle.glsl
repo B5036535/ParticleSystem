@@ -4,7 +4,10 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 
-uniform int SSBOswitch;
+uniform bool SSBOswitch;
+
+in vec3 position;
+
 
 struct Particle
 {
@@ -35,14 +38,14 @@ void main(void)
 
 	vec3 pos;
 	
-	if(SSBOswitch == 1)
+	if(SSBOswitch)
 	{
-		pos = particlesA.particles[gl_InstanceID].position;
-		OUT.colour = particlesA.particles[gl_InstanceID].colour;
+		pos = position + particlesB.particles[gl_InstanceID].position;
+		OUT.colour = particlesB.particles[gl_InstanceID].colour;
 	}
 	else
 	{
-		pos = particlesB.particles[gl_InstanceID].position;
+		pos = position + particlesA.particles[gl_InstanceID].position;
 		OUT.colour = particlesB.particles[gl_InstanceID].colour;
 	}
 	gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(pos, 1.0);

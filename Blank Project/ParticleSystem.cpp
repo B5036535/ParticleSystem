@@ -32,11 +32,11 @@ void ParticleSystem::Initialize()
 	
 	for (int i = 0; i < NUMBER_OF_INSTANCES; i++)
 	{
-		particles[i].colour		= Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-		particles[i].force		= Vector3(0, -9.81f,0);
-		particles[i].position	= Vector3(0,0,0);
-		particles[i].velocity	= Vector3(sin(i * PI * 2 / NUMBER_OF_INSTANCES), 0, cos(i * PI * 2 / NUMBER_OF_INSTANCES)) * 0.0001;
 		particles[i].lifeTime	= MAX_LIFE_TIME;
+		particles[i].colour		= Vector4(1.0f, 1.0f, 1.0f, 1.f);
+		particles[i].position	= Vector3(0.f,0.f,0.f);
+		particles[i].velocity	= Vector3(0.f,0.f,0.f);
+		particles[i].force		= Vector3(0.f,0.f,0.f);
 	}
 
 
