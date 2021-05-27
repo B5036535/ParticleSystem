@@ -10,7 +10,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	particleSystem = new ParticleSystem(10, quad);
 
-	position = Vector3(0, 0, -50);
+	position = Vector3(0, 0, -5);
 
 
 
@@ -34,7 +34,7 @@ Renderer::~Renderer(void)
 void Renderer::UpdateScene(float dt) 
 {
 	camera->UpdateCamera(dt);
-	//particleSystem->Update(dt);
+	particleSystem->Update(dt);
 	//glUseProgram(basicComputeShader->GetProgram());
 	//basicComputeShader->Dispatch(NUM_OF_INSTANCES, 1, 1);
 	//glUseProgram(0);

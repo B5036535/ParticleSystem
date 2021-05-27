@@ -12,7 +12,8 @@ ParticleSystem::ParticleSystem(float time, Mesh* mesh)
 	shader_instance = new Shader("vertex_particle.glsl", "fragment_basic.glsl");
 	shader_compute = new ComputeShader("compute_particle.glsl");
 
-	if (!shader_instance->LoadSuccess()) {
+	if (!shader_instance->LoadSuccess()) 
+	{
 		return;
 	}
 
@@ -32,11 +33,11 @@ void ParticleSystem::Initialize()
 	
 	for (int i = 0; i < NUMBER_OF_INSTANCES; i++)
 	{
-		particles[i].lifeTime	= MAX_LIFE_TIME;
 		particles[i].colour		= Vector4(1.0f, 1.0f, 1.0f, 1.f);
-		particles[i].position	= Vector3(0.f,0.f,0.f);
-		particles[i].velocity	= Vector3(0.f,0.f,0.f);
-		particles[i].force		= Vector3(0.f,0.f,0.f);
+		particles[i].position	= Vector4(0.f,0.f,0.f, MAX_LIFE_TIME);
+		//particles[i].velocity	= Vector4(0.f,0.f,0.f, 0.f);
+		particles[i].velocity	= Vector4(sin(2 * i  * PI / NUMBER_OF_INSTANCES), 10.f, cos(2 * i * PI / NUMBER_OF_INSTANCES), 0.f) * 2;
+		particles[i].force		= Vector4(0.f,-5.f,0.f, 0.f);
 	}
 
 

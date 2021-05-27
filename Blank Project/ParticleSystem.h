@@ -11,11 +11,10 @@ class ComputeShader;
 
 struct Particle
 {
-	float	lifeTime;
 	Vector4 colour;
-	Vector3 position;
-	Vector3 velocity;
-	Vector3 force;
+	Vector4 position;
+	Vector4 velocity;
+	Vector4 force;
 };
 
 class ParticleSystem
@@ -30,7 +29,7 @@ public:
 	void Render(Matrix4 model, Matrix4 view, Matrix4 projection);
 private:
 
-	const int	NUMBER_OF_INSTANCES = 1;
+	const int	NUMBER_OF_INSTANCES = 1000000;
 
 	const float	MAX_LIFE_TIME;
 

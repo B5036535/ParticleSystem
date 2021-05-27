@@ -11,11 +11,10 @@ in vec3 position;
 
 struct Particle
 {
-	float	lifeTime;
 	vec4	colour;
-	vec3	position;
-	vec3	velocity;
-	vec3	force;
+	vec4	position;
+	vec4	velocity;
+	vec4	force;
 };
 
 layout (std430, binding  = 1) buffer SSBOStructA
@@ -40,12 +39,12 @@ void main(void)
 	
 	if(SSBOswitch)
 	{
-		pos = position + particlesB.particles[gl_InstanceID].position;
+		pos = position + particlesB.particles[gl_InstanceID].position.xyz;
 		OUT.colour = particlesB.particles[gl_InstanceID].colour;
 	}
 	else
 	{
-		pos = position + particlesA.particles[gl_InstanceID].position;
+		pos = position + particlesA.particles[gl_InstanceID].position.xyz;
 		OUT.colour = particlesB.particles[gl_InstanceID].colour;
 	}
 	gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(pos, 1.0);

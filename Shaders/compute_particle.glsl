@@ -7,11 +7,10 @@ uniform float dt;
 
 struct Particle
 {
-	float	lifeTime;
 	vec4	colour;
-	vec3	position;
-	vec3	velocity;
-	vec3	force;
+	vec4	position;
+	vec4	velocity;
+	vec4	force;
 };
 
 layout (std430, binding  = 1) buffer SSBOStructA
@@ -37,16 +36,16 @@ void IntegrateAcceleration()
 {
 	if(SSBOswitch)
 	{
-		vec3 dVel = particlesA.particles[gl_GlobalInvocationID.x].force * dt;
-		vec3 vel = particlesA.particles[gl_GlobalInvocationID.x].velocity + dVel;
-		particlesB.particles[gl_GlobalInvocationID.x].velocity = vel;
+		vec3 dVel = particlesA.particles[gl_GlobalInvocationID.x].force.xyz * dt;
+		vec3 vel = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + dVel;
+		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = vel;
 	}
 
 	else
 	{
-		vec3 dVel = particlesB.particles[gl_GlobalInvocationID.x].force * dt;
-		vec3 vel = particlesB.particles[gl_GlobalInvocationID.x].velocity + dVel;
-		particlesA.particles[gl_GlobalInvocationID.x].velocity = vel;
+		vec3 dVel = particlesB.particles[gl_GlobalInvocationID.x].force.xyz * dt;
+		vec3 vel = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + dVel;
+		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = vel;
 	}
 }
 
@@ -54,16 +53,16 @@ void IntegreatVelocity()
 {
 	if(SSBOswitch)
 	{
-		vec3 dPos = particlesA.particles[gl_GlobalInvocationID.x].velocity * dt;
-		vec3 pos = particlesA.particles[gl_GlobalInvocationID.x].position + dPos;
-		particlesB.particles[gl_GlobalInvocationID.x].position = pos;
+		vec3 dPos = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz * dt;
+		vec3 pos = particlesA.particles[gl_GlobalInvocationID.x].position.xyz + dPos;
+		particlesB.particles[gl_GlobalInvocationID.x].position.xyz = pos;
 	}
 
 	else
 	{
-		vec3 dPos = particlesB.particles[gl_GlobalInvocationID.x].velocity * dt;
-		vec3 pos = particlesB.particles[gl_GlobalInvocationID.x].position + dPos;
-		particlesA.particles[gl_GlobalInvocationID.x].position = pos;
+		vec3 dPos = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz * dt;
+		vec3 pos = particlesB.particles[gl_GlobalInvocationID.x].position.xyz + dPos;
+		particlesA.particles[gl_GlobalInvocationID.x].position.xyz = pos;
 	}
 }
 
@@ -71,7 +70,7 @@ void CalculateColour()
 {
 	float red = sin(particlesA.particles[gl_GlobalInvocationID.x].velocity.y);
 	float green = cos(particlesA.particles[gl_GlobalInvocationID.x].velocity.y);
-	float blue = 1;
+	float blue = sin(particlesA.particles[gl_GlobalInvocationID.x].velocity.y * 10);
 
 	if(SSBOswitch)
 	{
