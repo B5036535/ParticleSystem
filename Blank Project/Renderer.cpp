@@ -8,12 +8,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	basicShader = new Shader("vertex_basicInstanced.glsl", "fragment_basic.glsl");
 	//basicComputeShader = new ComputeShader("compute_basic.glsl");
 
-	particleSystem = new ParticleSystem(10, quad);
+	particleSystem = new ParticleSystem(10, quad, EmitterType::RING);
 
 	position = Vector3(0, 0, -5);
-
-
-
 
 	if (!basicShader->LoadSuccess()) {
 		return;
