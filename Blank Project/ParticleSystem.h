@@ -22,14 +22,17 @@ struct Particle
 {
 	Vector4 colour;
 	Vector4 position;
+	Vector4 initvelocity;
 	Vector4 velocity;
+	Vector4 initforce;
 	Vector4 force;
+	Vector4 random;
 };
 
 class ParticleSystem
 {
 public:
-	ParticleSystem(float time, Mesh* mesh, EmitterType type);
+	ParticleSystem(float time, float emissionTime, Mesh* mesh, EmitterType type);
 	~ParticleSystem();
 	
 	Mesh*			mesh;
@@ -38,9 +41,10 @@ public:
 	void Render(Matrix4 model, Matrix4 view, Matrix4 projection);
 private:
 
-	const int	NUMBER_OF_INSTANCES = 1000;
+	const int	NUMBER_OF_INSTANCES = 10000;
 
 	const float	MAX_LIFE_TIME;
+	const float EMISSION_TIME;
 
 	unsigned int	SSBO[2];
 	bool			SSBOswitch;

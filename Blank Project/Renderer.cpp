@@ -8,13 +8,19 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	basicShader = new Shader("vertex_basicInstanced.glsl", "fragment_basic.glsl");
 	//basicComputeShader = new ComputeShader("compute_basic.glsl");
 
-	particleSystem = new ParticleSystem(10, quad, EmitterType::RING);
+	particleSystem = new ParticleSystem(1.f, 1.5f,quad, EmitterType::SPHERE);
 
 	position = Vector3(0, 0, -5);
 
-	if (!basicShader->LoadSuccess()) {
+	if (!basicShader->LoadSuccess()) 
+	{
 		return;
 	}
+
+	glEnable(GL_DEPTH_TEST);
+	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	init = true;
 }
@@ -40,7 +46,7 @@ void Renderer::UpdateScene(float dt)
 void Renderer::RenderScene() 
 {
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	viewMatrix = camera->BuildViewMatrix();
 	modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(0.1, 0.1, 0.1));

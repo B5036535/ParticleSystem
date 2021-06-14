@@ -6,15 +6,16 @@
 #include <ctime>
 #include <iostream>
 
-ParticleSystem::ParticleSystem(float time, Mesh* mesh, EmitterType type)
+ParticleSystem::ParticleSystem(float lifetime, float emissionTime,Mesh* mesh, EmitterType type)
 	:
 	SSBOswitch(true),
-	MAX_LIFE_TIME(time)	
+	MAX_LIFE_TIME(lifetime),
+	EMISSION_TIME(emissionTime)
 {
 	this->mesh = mesh;
 	this->type = type;
 
-	emissionData = Vector3(100, 100, 100);
+	emissionData = Vector3(10, 10, 10);
 
 	shader_instance = new Shader("vertex_particle.glsl", "fragment_basic.glsl");
 	shader_compute = new ComputeShader("compute_particle.glsl");
@@ -40,11 +41,18 @@ void ParticleSystem::Initialize()
 	
 	for (int i = 0; i < NUMBER_OF_INSTANCES; i++)
 	{
-		particles[i].colour		= Vector4(1.0f, 1.0f, 1.0f, 1.f);
-		particles[i].position	= Vector4(0.f,0.f,0.f, MAX_LIFE_TIME);
-		//particles[i].velocity	= Vector4(0.f,0.f,0.f, 0.f);
-		particles[i].velocity	= Vector4(sin(2 * i  * PI / NUMBER_OF_INSTANCES), 10.f, cos(2 * i * PI / NUMBER_OF_INSTANCES), 0.f) * 2;
-		particles[i].force		= Vector4(0.f,-5.f,0.f, 0);
+		//particles[i].lifetime	= Vector4(MAX_LIFE_TIME, MAX_LIFE_TIME, EMISSION_TIME, (static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * EMISSION_TIME);
+		//particles[i].lifetime	= Vector4(MAX_LIFE_TIME, MAX_LIFE_TIME, EMISSION_TIME, 0);
+		//std::cout << particles[i].lifetime.w << std::endl;
+		particles[i].colour			= Vector4(1.0f, 0.0f, 1.f, 1.f);
+		particles[i].position		= Vector4(0.f,0.f,0.f, 0.f);
+		//particles[i].velocity		= Vector4(0.f,0.f,0.f, 0.f);
+		particles[i].initvelocity	= Vector4(0, 10.f, 0, MAX_LIFE_TIME);
+		particles[i].velocity		= Vector4(0, 10.f, 0, 0);
+		particles[i].initforce		= Vector4(0.f,-5.f,0.f, EMISSION_TIME);
+		//particles[i].force			= Vector4(0.f,-5.f,0.f, 0);
+		particles[i].force			= Vector4(0.f,-5.f,0.f, static_cast <float> (rand()) / static_cast <float> (RAND_MAX) * EMISSION_TIME);
+		particles[i].random			= Vector4(static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
 	}
 
 
@@ -68,7 +76,7 @@ void ParticleSystem::Update(float dt)
 	glUseProgram(shader_compute->GetProgram());
 	glUniform1i(glGetUniformLocation(shader_compute->GetProgram(),	"SSBOswitch"), SSBOswitch);
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"dt"), dt);
-	std::cout << std::time(0) << std::endl;
+	//std::cout << std::time(0) << std::endl;
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"time"), std::time(0));
 	glUniform1i(glGetUniformLocation(shader_compute->GetProgram(),	"EmissionType"), (int)type);
 	glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "EmissionData"), 1, (float*)&emissionData);

@@ -11,10 +11,13 @@ in vec3 position;
 
 struct Particle
 {
-	vec4	colour;
-	vec4	position;
-	vec4	velocity;
-	vec4	force;
+	vec4 colour;
+	vec4 position;
+	vec4 initvelocity;
+	vec4 velocity;
+	vec4 initforce;
+	vec4 force;
+	vec4 random;
 };
 
 layout (std430, binding  = 1) buffer SSBOStructA
