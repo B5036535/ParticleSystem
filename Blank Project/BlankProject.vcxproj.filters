@@ -12,6 +12,9 @@
     <Filter Include="Particles">
       <UniqueIdentifier>{40af9771-6e76-40d5-b947-f5b5e8529d4c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Splines">
+      <UniqueIdentifier>{83a4b95b-a442-45c0-af72-6cbde95400fc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp">
@@ -23,6 +26,9 @@
     <ClCompile Include="ParticleSystem.cpp">
       <Filter>Particles</Filter>
     </ClCompile>
+    <ClCompile Include="Spline.cpp">
+      <Filter>Splines</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -30,6 +36,9 @@
     </ClInclude>
     <ClInclude Include="ParticleSystem.h">
       <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="Spline.h">
+      <Filter>Splines</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

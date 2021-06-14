@@ -139,10 +139,12 @@
     <ClCompile Include="BlankProject.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Spline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Spline.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
