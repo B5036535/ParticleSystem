@@ -3,6 +3,7 @@
 #include "../nclgl/Vector3.h"
 #include "../nclgl/Vector4.h"
 #include "../nclgl/Matrix4.h"
+#include "Spline.h"
 
 class Mesh;
 class Shader;
@@ -35,7 +36,8 @@ public:
 	ParticleSystem(float time, float emissionTime, Mesh* mesh, EmitterType type);
 	~ParticleSystem();
 	
-	Mesh*			mesh;
+	Mesh*	mesh;
+	Spline	forceSpline;
 
 	void Update(float dt);
 	void Render(Matrix4 model, Matrix4 view, Matrix4 projection);

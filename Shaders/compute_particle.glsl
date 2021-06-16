@@ -8,10 +8,12 @@ uniform float time;
 uniform int	EmissionType;
 uniform vec3 EmissionData;
 
+uniform vec4	spline_force[8];
+uniform float	spline_force_totalLength;
+uniform vec3	spline_force_maxValues;
 
 struct Particle
 {
-	
 	vec4 colour;
 	vec4 position;
 	vec4 initvelocity;
@@ -38,6 +40,86 @@ float Random(vec2 co)
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
+// inbetween points 1 and 6 (starting index 0)
+vec3 GetPointOnSpline(float t)
+{
+
+	int p1 = int(floor(t));
+	int p0 = int(p1 - 1);
+	int p2 = int(p1 + 1);
+	int p3 = int(p2 + 1);
+
+	t = t - floor(t);
+	
+	float tSquared = t * t;
+	float tCubed = tSquared * t;
+
+	float influence[4];
+	influence[0] = -tCubed + 2.0f * tSquared - t;
+	influence[1] = 3.0f * tCubed - 5.0f * tSquared + 2.0f;
+	influence[2] = -3.0f * tCubed + 4.0f * tSquared + t;
+	influence[3] = tCubed - tSquared;
+
+	
+	
+	float x = 0.5f * 
+	(
+		spline_force[p0].x * influence[0] 
+		+ 
+		spline_force[p1].x * influence[1] 
+		+
+		spline_force[p2].x * influence[2] 
+		+
+		spline_force[p3].x * influence[3]
+	);
+
+
+	float y = 0.5f * 
+	(
+		spline_force[p0].y * influence[0] 
+		+ 
+		spline_force[p1].y * influence[1] 
+		+ 
+		spline_force[p2].y * influence[2] 
+		+ 
+		spline_force[p3].y * influence[3]
+	);
+
+	float z = 0.5f * 
+	(
+		spline_force[p0].z * influence[0] 
+		+ 
+		spline_force[p1].z * influence[1] 
+		+ 
+		spline_force[p2].z * influence[2] 
+		+ 
+		spline_force[p3].z * influence[3]
+	);
+	return vec3(x, y, z);
+}
+
+float GetSplineTime(float splineTotalLength, vec4 spline[8])
+{
+	float lengthPerT = splineTotalLength / particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w;
+	float currentLengthTravelled = particlesA.particles[gl_GlobalInvocationID.x].velocity.w * lengthPerT;
+
+	float tracker = 0;
+	int i = 1;	// only points 1 - 6 have lengths
+	while(tracker < currentLengthTravelled && i < 7)
+	{
+		tracker += spline[i].z;
+		i++;
+	}
+
+	if(i != 7)
+	{
+		tracker -= spline[i].z;
+		float remainder = currentLengthTravelled - tracker;
+		return float(i - 1) + remainder / spline[i].z;
+	}
+	else
+		return 0.f;
+}
 
 
 void EmitterRing()
@@ -163,6 +245,40 @@ void ResetParticle()
 	particlesB.particles[gl_GlobalInvocationID.x].position.w = 1.0;
 }
 
+void AddForce()
+{
+	vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force));
+
+	vec3 splineInfluence = vec3(splineData.x / spline_force_maxValues.x, splineData.y / spline_force_maxValues.y, splineData.x + splineData.y / spline_force_maxValues.x + spline_force_maxValues.y );
+
+
+	if(SSBOswitch)
+	{
+		particlesB.particles[gl_GlobalInvocationID.x].force.xyz = particlesA.particles[gl_GlobalInvocationID.x].force.xyz + splineInfluence * 0.2f;
+	}
+
+	else
+	{
+		particlesA.particles[gl_GlobalInvocationID.x].force.xyz = particlesB.particles[gl_GlobalInvocationID.x].force.xyz + splineInfluence * 0.2f;
+	}
+}
+
+void CalculateForce()
+{
+	float attractiveForce = 10f;
+	if(SSBOswitch)
+	{
+		attractiveForce = length(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * 20.0f;
+		particlesB.particles[gl_GlobalInvocationID.x].force.xyz = normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * attractiveForce;
+	}
+
+	else
+	{
+		attractiveForce = length(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * 20.0f;
+		particlesA.particles[gl_GlobalInvocationID.x].force.xyz =  normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * attractiveForce;
+	}
+	
+}
 void IntegrateAcceleration()
 {
 	if(SSBOswitch)
@@ -180,8 +296,27 @@ void IntegrateAcceleration()
 	}
 }
 
+void AddVelocityFromSpline()
+{
+	vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force));
+
+	vec3 splineInfluence = vec3(splineData.x / spline_force_maxValues.x, splineData.y / spline_force_maxValues.y, splineData.z / spline_force_maxValues.z );
+
+
+	if(SSBOswitch)
+	{
+		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.5f;
+	}
+
+	else
+	{
+		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.5f;
+	}
+}
+
 void IntegreatVelocity()
 {
+	AddVelocityFromSpline();
 	if(SSBOswitch)
 	{
 		vec3 dPos = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz * dt;
@@ -233,6 +368,8 @@ void UpdateLifeTime()
 	{		
 		if(particlesA.particles[gl_GlobalInvocationID.x].position.w == 1.0)
 		{
+			//AddForce();
+			CalculateForce();
 			IntegrateAcceleration();
 			IntegreatVelocity();
 
@@ -262,6 +399,8 @@ void UpdateLifeTime()
 	{
 		if(particlesB.particles[gl_GlobalInvocationID.x].position.w == 1.0)
 		{
+			//AddForce();
+			CalculateForce();
 			IntegrateAcceleration();
 			IntegreatVelocity();
 

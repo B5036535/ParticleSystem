@@ -80,6 +80,9 @@ void ParticleSystem::Update(float dt)
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"time"), std::time(0));
 	glUniform1i(glGetUniformLocation(shader_compute->GetProgram(),	"EmissionType"), (int)type);
 	glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "EmissionData"), 1, (float*)&emissionData);
+	glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force"), 8, (float*)&forceSpline);
+	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_totalLength"), forceSpline.totalLength);
+	glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_maxValues"), 1, (float*)&forceSpline.maxValues);
 	shader_compute->Dispatch(NUMBER_OF_INSTANCES, 1, 1);
 	glUseProgram(0);
 }
