@@ -7,7 +7,7 @@ uniform mat4 projMatrix;
 uniform bool SSBOswitch;
 
 in vec3 position;
-
+in vec2 texCoord;
 
 struct Particle
 {
@@ -33,6 +33,7 @@ layout (std430, binding  = 2) buffer SSBOStructB
 out Vertex
 {
 	vec4 colour;
+	vec2 texCoord;
 } OUT;
 
 void main(void)
@@ -50,6 +51,7 @@ void main(void)
 		pos = position + particlesA.particles[gl_InstanceID].position.xyz;
 		OUT.colour = particlesB.particles[gl_InstanceID].colour;
 	}
+	OUT.texCoord = texCoord;
 	gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(pos, 1.0);
 
 }

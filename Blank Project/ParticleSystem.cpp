@@ -5,16 +5,30 @@
 
 #include <ctime>
 #include <iostream>
-
+#include <algorithm>
 ParticleSystem::ParticleSystem(float lifetime, float emissionTime,Mesh* mesh, EmitterType type)
 	:
 	SSBOswitch(true),
 	MAX_LIFE_TIME(lifetime),
-	EMISSION_TIME(emissionTime)
+	EMISSION_TIME(emissionTime),
+	currentLifeTime(0.f)
 {
 	this->mesh = mesh;
 	this->type = type;
 
+	Vector3 colourOverLifetime[8] =
+	{
+		Vector3(0.0f, 0.f, 0.f),
+		Vector3(1.0f, 0.0f, 0.f),
+		Vector3(0.0f, 1.0f, 0.f),
+		Vector3(0.0f, 0.0f, 1.0f),
+		Vector3(1.0f, 1.0f, 0.f),
+		Vector3(0.0f, 1.0f, 1.0f),
+		Vector3(1.f, 1.f, 1.0f),
+		Vector3(1.f, 0.f, 0.0f),
+	};
+
+	colourSpline = Spline(colourOverLifetime);
 	emissionData = Vector3(10, 10, 10);
 
 	shader_instance = new Shader("vertex_particle.glsl", "fragment_basic.glsl");
@@ -24,6 +38,11 @@ ParticleSystem::ParticleSystem(float lifetime, float emissionTime,Mesh* mesh, Em
 	{
 		return;
 	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO_OIT);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_ACCUM, GL_TEXTURE_2D, buffer_accumulation, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffer_reveal, 0);
+
 
 	Initialize();
 }
@@ -73,6 +92,14 @@ void ParticleSystem::Initialize()
 // Update particle SSBO i.e. Dispatch compute shader
 void ParticleSystem::Update(float dt)
 {
+	//currentLifeTime += dt;
+	//SplineCoord colour = colourSpline.GetPointOnSpline(colourSpline.GetSplineTime(currentLifeTime, MAX_LIFE_TIME));
+	//colour.x = std::clamp(colour.x, 0.0f, 1.0f);
+	//colour.y = std::clamp(colour.y, 0.0f, 1.0f);
+	//colour.z = std::clamp(colour.z, 0.0f, 1.0f);
+	//
+	//std::cout << colour << std::endl;
+
 	glUseProgram(shader_compute->GetProgram());
 	glUniform1i(glGetUniformLocation(shader_compute->GetProgram(),	"SSBOswitch"), SSBOswitch);
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"dt"), dt);
@@ -83,13 +110,25 @@ void ParticleSystem::Update(float dt)
 	glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force"), 8, (float*)&forceSpline);
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_totalLength"), forceSpline.totalLength);
 	glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_maxValues"), 1, (float*)&forceSpline.maxValues);
+	glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour"), 8, (float*)&forceSpline);
+	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_totalLength"), forceSpline.totalLength);
+	glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_maxValues"), 1, (float*)&forceSpline.maxValues);
 	shader_compute->Dispatch(NUMBER_OF_INSTANCES, 1, 1);
 	glUseProgram(0);
 }
 
 // Instance Render the mesh multiple times
+// For OIT opaque surfaces needed to be rendered before this
 void ParticleSystem::Render(Matrix4 model, Matrix4 view, Matrix4 projection)
 {
+	GLfloat glf = 1.f;
+	glClearAccum(0, 0, 0, 0);
+	glClear(GL_ACCUM_BUFFER_BIT);
+	glClearBufferfv(buffer_reveal, buffer_reveal, &glf);
+	glDepthMask(false);
+	glEnable(GL_BLEND);
+	glBlendFunci(0, GL_ONE, GL_ONE);
+	glBlendFunci(1, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
 	glUseProgram(shader_instance->GetProgram());
 	glUniform1i(glGetUniformLocation(shader_instance->GetProgram(),			"SSBOswitch"), SSBOswitch);
 	glUniformMatrix4fv(glGetUniformLocation(shader_instance->GetProgram(),	"modelMatrix"), 1, false, model.values);

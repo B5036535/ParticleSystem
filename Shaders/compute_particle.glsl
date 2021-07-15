@@ -12,6 +12,10 @@ uniform vec4	spline_force[8];
 uniform float	spline_force_totalLength;
 uniform vec3	spline_force_maxValues;
 
+uniform vec4	spline_colour[8];
+uniform float	spline_colour_totalLength;
+uniform vec3	spline_colour_maxValues;
+
 struct Particle
 {
 	vec4 colour;
@@ -41,7 +45,7 @@ float Random(vec2 co)
 }
 
 // inbetween points 1 and 6 (starting index 0)
-vec3 GetPointOnSpline(float t)
+vec3 GetPointOnSpline(float t, vec4 spline[8])
 {
 
 	int p1 = int(floor(t));
@@ -64,36 +68,36 @@ vec3 GetPointOnSpline(float t)
 	
 	float x = 0.5f * 
 	(
-		spline_force[p0].x * influence[0] 
+		spline[p0].x * influence[0] 
 		+ 
-		spline_force[p1].x * influence[1] 
+		spline[p1].x * influence[1] 
 		+
-		spline_force[p2].x * influence[2] 
+		spline[p2].x * influence[2] 
 		+
-		spline_force[p3].x * influence[3]
+		spline[p3].x * influence[3]
 	);
 
 
 	float y = 0.5f * 
 	(
-		spline_force[p0].y * influence[0] 
+		spline[p0].y * influence[0] 
 		+ 
-		spline_force[p1].y * influence[1] 
+		spline[p1].y * influence[1] 
 		+ 
-		spline_force[p2].y * influence[2] 
+		spline[p2].y * influence[2] 
 		+ 
-		spline_force[p3].y * influence[3]
+		spline[p3].y * influence[3]
 	);
 
 	float z = 0.5f * 
 	(
-		spline_force[p0].z * influence[0] 
+		spline[p0].z * influence[0] 
 		+ 
-		spline_force[p1].z * influence[1] 
+		spline[p1].z * influence[1] 
 		+ 
-		spline_force[p2].z * influence[2] 
+		spline[p2].z * influence[2] 
 		+ 
-		spline_force[p3].z * influence[3]
+		spline[p3].z * influence[3]
 	);
 	return vec3(x, y, z);
 }
@@ -107,15 +111,15 @@ float GetSplineTime(float splineTotalLength, vec4 spline[8])
 	int i = 1;	// only points 1 - 6 have lengths
 	while(tracker < currentLengthTravelled && i < 7)
 	{
-		tracker += spline[i].z;
+		tracker += spline[i].w;
 		i++;
 	}
 
 	if(i != 7)
 	{
-		tracker -= spline[i].z;
+		tracker -= spline[i].w;
 		float remainder = currentLengthTravelled - tracker;
-		return float(i - 1) + remainder / spline[i].z;
+		return float(i - 1) + remainder / spline[i].w;
 	}
 	else
 		return 0.f;
@@ -247,19 +251,25 @@ void ResetParticle()
 
 void AddForce()
 {
-	vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force));
-
-	vec3 splineInfluence = vec3(splineData.x / spline_force_maxValues.x, splineData.y / spline_force_maxValues.y, splineData.x + splineData.y / spline_force_maxValues.x + spline_force_maxValues.y );
+	//vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force), spline_force);
+	//
+	//vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z);
 
 
 	if(SSBOswitch)
 	{
-		particlesB.particles[gl_GlobalInvocationID.x].force.xyz = particlesA.particles[gl_GlobalInvocationID.x].force.xyz + splineInfluence * 0.2f;
+		vec3 splineData = GetPointOnSpline(particlesA.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
+		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z);
+
+		particlesB.particles[gl_GlobalInvocationID.x].force.xyz = particlesA.particles[gl_GlobalInvocationID.x].force.xyz + normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.2f;
 	}
 
 	else
 	{
-		particlesA.particles[gl_GlobalInvocationID.x].force.xyz = particlesB.particles[gl_GlobalInvocationID.x].force.xyz + splineInfluence * 0.2f;
+		vec3 splineData = GetPointOnSpline(particlesA.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
+		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z);
+
+		particlesA.particles[gl_GlobalInvocationID.x].force.xyz = particlesB.particles[gl_GlobalInvocationID.x].force.xyz + normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.2f;
 	}
 }
 
@@ -298,25 +308,30 @@ void IntegrateAcceleration()
 
 void AddVelocityFromSpline()
 {
-	vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force));
+	//vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force), spline_force);
 
-	vec3 splineInfluence = vec3(splineData.x / spline_force_maxValues.x, splineData.y / spline_force_maxValues.y, splineData.z / spline_force_maxValues.z );
+	//vec3 splineInfluence = vec3(splineData.x / spline_force_maxValues.x, splineData.y / spline_force_maxValues.y, splineData.z / spline_force_maxValues.z );
 
 
 	if(SSBOswitch)
 	{
-		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.5f;
+		vec3 splineData = GetPointOnSpline(particlesA.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
+		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z  );
+		
+		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 1.5f;
 	}
 
 	else
 	{
-		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.5f;
+		vec3 splineData = GetPointOnSpline(particlesB.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
+
+		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z  );
+		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 1.5f;
 	}
 }
 
 void IntegreatVelocity()
 {
-	AddVelocityFromSpline();
 	if(SSBOswitch)
 	{
 		vec3 dPos = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz * dt;
@@ -339,6 +354,12 @@ void CalculateColour()
 	float blue	= 1;
 	float alpha;
 
+	vec3 splineData = GetPointOnSpline(GetSplineTime(spline_colour_totalLength, spline_colour), spline_colour);
+
+	//splineData = clamp(splineData, vec3(0.0f,0.0f,0.0f), vec3(1.0f, 1.0f,1.0f));
+
+	//float red = splineData.x;
+
 	if(SSBOswitch)
 	{
 		//if(particlesA.particles[gl_GlobalInvocationID.x].lifetime.y < particlesA.particles[gl_GlobalInvocationID.x].lifetime.x)
@@ -348,6 +369,7 @@ void CalculateColour()
 
 		alpha = particlesA.particles[gl_GlobalInvocationID.x].position.w;
 		particlesB.particles[gl_GlobalInvocationID.x].colour = vec4(red,green,blue,alpha);
+		//particlesB.particles[gl_GlobalInvocationID.x].colour = vec4(splineData,alpha);
 	}
 
 	else
@@ -359,6 +381,7 @@ void CalculateColour()
 		alpha = particlesB.particles[gl_GlobalInvocationID.x].position.w;
 
 		particlesA.particles[gl_GlobalInvocationID.x].colour = vec4(red,green,blue,alpha);
+		//particlesA.particles[gl_GlobalInvocationID.x].colour = vec4(splineData,alpha);
 	}
 }
 
@@ -369,8 +392,10 @@ void UpdateLifeTime()
 		if(particlesA.particles[gl_GlobalInvocationID.x].position.w == 1.0)
 		{
 			//AddForce();
-			CalculateForce();
+			//CalculateForce();
 			IntegrateAcceleration();
+	
+			AddVelocityFromSpline();
 			IntegreatVelocity();
 
 			if(particlesA.particles[gl_GlobalInvocationID.x].velocity.w < particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w)
@@ -400,8 +425,10 @@ void UpdateLifeTime()
 		if(particlesB.particles[gl_GlobalInvocationID.x].position.w == 1.0)
 		{
 			//AddForce();
-			CalculateForce();
+			//CalculateForce();
 			IntegrateAcceleration();
+
+			AddVelocityFromSpline();
 			IntegreatVelocity();
 
 			if(particlesB.particles[gl_GlobalInvocationID.x].velocity.w < particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w)

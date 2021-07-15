@@ -38,18 +38,27 @@ public:
 	
 	Mesh*	mesh;
 	Spline	forceSpline;
+	Spline	colourSpline;
 
 	void Update(float dt);
 	void Render(Matrix4 model, Matrix4 view, Matrix4 projection);
 private:
+	float currentLifeTime;
 
-	const int	NUMBER_OF_INSTANCES = 10000;
+	const int	NUMBER_OF_INSTANCES = 200000;
 
 	const float	MAX_LIFE_TIME;
 	const float EMISSION_TIME;
 
 	unsigned int	SSBO[2];
 	bool			SSBOswitch;
+
+	unsigned int FBO_OIT;
+	unsigned int FBO_collision;
+	unsigned int tex_depth;
+	unsigned int tex_colour;
+	unsigned int buffer_accumulation;
+	unsigned int buffer_reveal;
 
 	Shader*			shader_instance;
 	ComputeShader*	shader_compute;

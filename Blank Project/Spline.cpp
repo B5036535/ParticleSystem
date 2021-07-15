@@ -39,13 +39,36 @@ float Spline::CalculateSplineSegmentLength(int initialPoint)
 	{
 		newPoint = GetPointOnSpline((float)initialPoint + t);
 		
-		maxValues[0] = maxValues[0] < newPoint.x ? newPoint.x : maxValues[0];
-		maxValues[1] = maxValues[1] < newPoint.y ? newPoint.y : maxValues[1];
-		maxValues[2] = maxValues[2] < newPoint.z ? newPoint.z : maxValues[2];
+		maxValues[0] = maxValues[0] < abs(newPoint.x) ? abs(newPoint.x) : maxValues[0];
+		maxValues[1] = maxValues[1] < abs(newPoint.y) ? abs(newPoint.y) : maxValues[1];
+		maxValues[2] = maxValues[2] < abs(newPoint.z) ? abs(newPoint.z) : maxValues[2];
 
 		segmentLength += sqrtf((newPoint.x - oldPoint.x) * (newPoint.x - oldPoint.x) + (newPoint.y - oldPoint.y) * (newPoint.y - oldPoint.y) + (newPoint.z - oldPoint.z) * (newPoint.z - oldPoint.z));
 		oldPoint = newPoint;
 	}
 
 	return segmentLength;
+}
+
+float Spline::GetSplineTime(float totalTime, float maxLifeTime)
+{
+	float lengthPerT = totalLength / maxLifeTime;
+	float currentLengthTravelled = totalTime * lengthPerT;
+
+	float tracker = 0;
+	int i = 1;	// only points 1 - 6 have lengths
+	while (tracker < currentLengthTravelled && i < 7)
+	{
+		tracker += controlPoints[i].length;
+		i++;
+	}
+
+	if (i != 7)
+	{
+		tracker -= controlPoints[i].length;
+		float remainder = currentLengthTravelled - tracker;
+		return float(i - 1) + remainder / controlPoints[i].length;
+	}
+	else
+		return 0.f;
 }
