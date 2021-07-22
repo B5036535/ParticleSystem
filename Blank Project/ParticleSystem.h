@@ -30,12 +30,85 @@ struct Particle
 	Vector4 random;
 };
 
+struct ParticleSystemData
+{
+public:
+
+	ParticleSystemData();
+
+
+	ParticleSystemData(Mesh* m, int instances, float lTime, float eTime, EmitterType type, Vector3 eData);
+
+
+	~ParticleSystemData()
+	{
+		delete[] dataFilled;
+	}
+
+	bool velocityWorldSpace;
+	bool forceWorldSpace;
+
+	Vector3		initialForce;
+	Spline		force[3];
+
+	Vector3		inititialVelocity;
+	Spline		velocity_linear[3];
+	Spline		velocity_orbital[4];
+
+	Spline		colour[4];
+
+	bool DataCheck();
+
+	void SetMesh(Mesh* mesh);
+	Mesh* GetMesh();
+
+	void SetNumberOfInstances(int n);
+	int GetNumberOfInstances();
+
+	void SetMaxLifeTime(float t);
+	float GetMaxLifeTime();
+
+	void SetEmitter(float time, EmitterType type, Vector3 d);
+	float GetEmissionTime();
+	EmitterType GetEmitterType();
+	Vector3 GetEmissionData();
+
+	void FillSplineForce(const Spline x, const Spline y, const Spline z);
+	void FillSplineVelocityLinear(Spline x, Spline y, Spline z);
+	void FillSplineVelocityOrbital(Spline x, Spline y, Spline z, Spline r);
+	void FillSplineColour(Spline r, Spline g, Spline b, Spline a);
+	void FillInitialForceAndVelocity(Vector3 f,Vector3 v);
+
+	void GenerateNoise();
+
+private:
+
+	const int NUMBER_OF_DATA = 9;
+
+	Mesh* mesh;
+	int	NUMBER_OF_INSTANCES;
+	float MAX_LIFE_TIME;
+	float EMISSION_TIME;
+
+
+	EmitterType emitter;
+	Vector3		emissionData;
+	bool* dataFilled;
+
+	unsigned int FBO_noise;
+	unsigned int tex_noise;
+	
+};
+
 class ParticleSystem
 {
 public:
-	ParticleSystem(float time, float emissionTime, Mesh* mesh, EmitterType type);
+	//ParticleSystem(float time, float emissionTime, Mesh* mesh, EmitterType type);
+	ParticleSystem(ParticleSystemData* data);
 	~ParticleSystem();
 	
+	ParticleSystemData* data;
+
 	Mesh*	mesh;
 	Spline	forceSpline;
 	Spline	colourSpline;
@@ -45,10 +118,10 @@ public:
 private:
 	float currentLifeTime;
 
-	const int	NUMBER_OF_INSTANCES = 200000;
-
-	const float	MAX_LIFE_TIME;
-	const float EMISSION_TIME;
+	//const int	NUMBER_OF_INSTANCES = 200000;
+	//
+	//const float	MAX_LIFE_TIME;
+	//const float EMISSION_TIME;
 
 	unsigned int	SSBO[2];
 	bool			SSBOswitch;

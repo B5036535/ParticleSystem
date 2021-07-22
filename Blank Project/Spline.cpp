@@ -1,5 +1,6 @@
 #include "Spline.h"
 #include "math.h"
+#include <iostream>
 SplineCoord Spline::GetPointOnSpline(float t)
 {
 
@@ -23,8 +24,7 @@ SplineCoord Spline::GetPointOnSpline(float t)
 
 	float y = 0.5f * (controlPoints[p0].y * influence[0] + controlPoints[p1].y * influence[1] + controlPoints[p2].y * influence[2] + controlPoints[p3].y * influence[3]);
 
-	float z = 0.5f * (controlPoints[p0].z * influence[0] + controlPoints[p1].z * influence[1] + controlPoints[p2].z * influence[2] + controlPoints[p3].z * influence[3]);
-	return { x, y, z};
+	return { x, y};
 }
 
 float Spline::CalculateSplineSegmentLength(int initialPoint)
@@ -41,34 +41,57 @@ float Spline::CalculateSplineSegmentLength(int initialPoint)
 		
 		maxValues[0] = maxValues[0] < abs(newPoint.x) ? abs(newPoint.x) : maxValues[0];
 		maxValues[1] = maxValues[1] < abs(newPoint.y) ? abs(newPoint.y) : maxValues[1];
-		maxValues[2] = maxValues[2] < abs(newPoint.z) ? abs(newPoint.z) : maxValues[2];
 
-		segmentLength += sqrtf((newPoint.x - oldPoint.x) * (newPoint.x - oldPoint.x) + (newPoint.y - oldPoint.y) * (newPoint.y - oldPoint.y) + (newPoint.z - oldPoint.z) * (newPoint.z - oldPoint.z));
+		segmentLength += sqrtf((newPoint.x - oldPoint.x) * (newPoint.x - oldPoint.x) + (newPoint.y - oldPoint.y) * (newPoint.y - oldPoint.y));
 		oldPoint = newPoint;
 	}
 
 	return segmentLength;
 }
 
-float Spline::GetSplineTime(float totalTime, float maxLifeTime)
+float Spline::GetSplineValue(float normalizedAge)
 {
-	float lengthPerT = totalLength / maxLifeTime;
-	float currentLengthTravelled = totalTime * lengthPerT;
-
 	float tracker = 0;
 	int i = 1;	// only points 1 - 6 have lengths
-	while (tracker < currentLengthTravelled && i < 7)
+	do
 	{
-		tracker += controlPoints[i].length;
+		tracker += controlPoints[i].length_x;
 		i++;
-	}
+	} while (tracker < normalizedAge && i < 7);
 
-	if (i != 7)
+	if (i < 7  && tracker <= 1.0f)
 	{
-		tracker -= controlPoints[i].length;
-		float remainder = currentLengthTravelled - tracker;
-		return float(i - 1) + remainder / controlPoints[i].length;
+		tracker -= controlPoints[i - 1].length_x;
+		float remainder = normalizedAge - tracker;
+		//float ratio = controlPoints[i - 1].length_segment / controlPoints[i - 1].length_x;
+		float progressInSection = remainder / controlPoints[i - 1].length_x;
+		std::cout<< " remainder = " << remainder << " progress in section = " << progressInSection << " value = ";
+		return GetPointOnSpline(i + progressInSection).y;
 	}
 	else
 		return 0.f;
 }
+
+
+//float Spline::GetSplineTime(float totalTime, float maxLifeTime)
+//{
+//	float lengthPerT = totalLength / maxLifeTime;
+//	float currentLengthTravelled = totalTime * lengthPerT;
+//
+//	float tracker = 0;
+//	int i = 1;	// only points 1 - 6 have lengths
+//	while (tracker < currentLengthTravelled && i < 7)
+//	{
+//		tracker += controlPoints[i].length;
+//		i++;
+//	}
+//
+//	if (i != 7)
+//	{
+//		tracker -= controlPoints[i].length;
+//		float remainder = currentLengthTravelled - tracker;
+//		return float(i - 1) + remainder / controlPoints[i].length;
+//	}
+//	else
+//		return 0.f;
+//}

@@ -22,6 +22,9 @@ protected:
 	const static int NUM_IN_GRID = NUM_OF_X * NUM_OF_Y * NUM_OF_Z;
 	Camera* camera;
 	
+	ParticleSystemData* psData_A;
+	ParticleSystemData* psData_B;
+
 	ParticleSystem* particleSystem;
 
 	Mesh* triangle;
@@ -44,6 +47,6 @@ protected:
 
 	//ComputeShader* basicComputeShader;
 
-
 	GLuint SSBO_Test;
+
 };

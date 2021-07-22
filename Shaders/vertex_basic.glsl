@@ -10,6 +10,7 @@ in vec4 colour;
 out Vertex
 {
 	vec4 colour;
+	vec2 texCoord;
 } OUT;
 
 void main(void)

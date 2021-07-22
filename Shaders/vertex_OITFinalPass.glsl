@@ -1,9 +1,5 @@
 #version 330 core
 
-uniform mat4 modelMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 projMatrix;
-
 in vec3 position;
 in vec4 colour;
 in vec2 texCoord;

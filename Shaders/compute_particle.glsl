@@ -8,13 +8,26 @@ uniform float time;
 uniform int	EmissionType;
 uniform vec3 EmissionData;
 
-uniform vec4	spline_force[8];
-uniform float	spline_force_totalLength;
-uniform vec3	spline_force_maxValues;
 
-uniform vec4	spline_colour[8];
-uniform float	spline_colour_totalLength;
-uniform vec3	spline_colour_maxValues;
+
+uniform vec4	spline_force_x[8];
+uniform vec4	spline_force_y[8];
+uniform vec4	spline_force_z[8];
+
+uniform vec4	spline_velocity_linear_x[8];
+uniform vec4	spline_velocity_linear_y[8];
+uniform vec4	spline_velocity_linear_z[8];
+
+uniform vec4	spline_velocity_orbital_x[8];
+uniform vec4	spline_velocity_orbital_y[8];
+uniform vec4	spline_velocity_orbital_z[8];
+uniform vec4	spline_velocity_orbital_r[8];
+
+uniform vec4	spline_colour_r[8];
+uniform vec4	spline_colour_g[8];
+uniform vec4	spline_colour_b[8];
+uniform vec4	spline_colour_a[8];
+
 
 struct Particle
 {
@@ -37,15 +50,17 @@ layout (std430, binding  = 2) buffer SSBOStructB
 	Particle particles[];
 } particlesB;
 
+const float twoPi	= 3.14159 * 2;
+const float pi		= 3.14159;
 
 
-float Random(vec2 co)
+float Random(float x)
 {
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(vec2(x, time) ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
 // inbetween points 1 and 6 (starting index 0)
-vec3 GetPointOnSpline(float t, vec4 spline[8])
+float GetPointOnSpline(float t, vec4 spline[8])
 {
 
 	int p1 = int(floor(t));
@@ -65,17 +80,6 @@ vec3 GetPointOnSpline(float t, vec4 spline[8])
 	influence[3] = tCubed - tSquared;
 
 	
-	
-	float x = 0.5f * 
-	(
-		spline[p0].x * influence[0] 
-		+ 
-		spline[p1].x * influence[1] 
-		+
-		spline[p2].x * influence[2] 
-		+
-		spline[p3].x * influence[3]
-	);
 
 
 	float y = 0.5f * 
@@ -89,18 +93,31 @@ vec3 GetPointOnSpline(float t, vec4 spline[8])
 		spline[p3].y * influence[3]
 	);
 
-	float z = 0.5f * 
-	(
-		spline[p0].z * influence[0] 
-		+ 
-		spline[p1].z * influence[1] 
-		+ 
-		spline[p2].z * influence[2] 
-		+ 
-		spline[p3].z * influence[3]
-	);
-	return vec3(x, y, z);
+
+	return  y;
 }
+
+float GetSplineValue(float normalizedAge, vec4 spline[8])
+{
+	float tracker = 0;
+	int i = 1;	// only points 1 - 6 have lengths
+	do
+	{
+		tracker += spline[i].w;
+		i++;
+	} while (tracker < normalizedAge && i < 7);
+
+	if (i < 7  && tracker <= 1.0f)
+	{
+		tracker -= spline[i - 1].w;
+		float remainder = normalizedAge - tracker;
+		float progressInSection = remainder / spline[i - 1].w;
+		return GetPointOnSpline(i + progressInSection, spline);
+	}
+	else
+		return 0.f;
+}
+
 
 float GetSplineTime(float splineTotalLength, vec4 spline[8])
 {
@@ -128,10 +145,6 @@ float GetSplineTime(float splineTotalLength, vec4 spline[8])
 
 void EmitterRing()
 {
-	//Go in a random direction on the xz plane with a distance of EmissionData.x
-	//float random = Random(vec2(time, gl_GlobalInvocationID.x))  * 2 - 1;
-	const float twoPi	= 3.14159 * 2;
-
 	float random = particlesB.particles[gl_GlobalInvocationID.x].random.x * twoPi;
 	vec2 direction = vec2(sin(random) ,cos(random));
 
@@ -143,12 +156,6 @@ void EmitterRing()
 
 void EmitterSphere()
 {
-	//Get a random position within a whose radius = EmissionData.x
-	const float twoPi	= 3.14159 * 2;
-	//float randomTheta		= Random(vec2(time, gl_GlobalInvocationID.x)) * pi;
-	//float randomPhi		= Random(vec2(time, gl_GlobalInvocationID.x)) * halfPi;
-	//float randomRadius	= Random(vec2(time, gl_GlobalInvocationID.x)) * EmissionData.x;
-
 	float randomTheta	= particlesB.particles[gl_GlobalInvocationID.x].random.x * twoPi;
 	float randomPhi		= particlesB.particles[gl_GlobalInvocationID.x].random.y * twoPi;
 	float randomRadius	= particlesB.particles[gl_GlobalInvocationID.x].random.z * EmissionData.x;
@@ -166,13 +173,6 @@ void EmitterSphere()
 
 void EmitterHemisphere()
 {
-
-	const float pi		= 3.14159;
-	const float twoPi	= pi * 2;
-	//float randomTheta		= Random(vec2(time, gl_GlobalInvocationID.x)) * pi;
-	//float randomPhi		= Random(vec2(time, gl_GlobalInvocationID.x)) * halfPi;
-	//float randomRadius	= Random(vec2(time, gl_GlobalInvocationID.x)) * EmissionData.x;
-
 	float randomTheta	= particlesB.particles[gl_GlobalInvocationID.x].random.x * pi;
 	float randomPhi		= particlesB.particles[gl_GlobalInvocationID.x].random.y * pi;
 	float randomRadius	= particlesB.particles[gl_GlobalInvocationID.x].random.z * EmissionData.x;
@@ -190,11 +190,6 @@ void EmitterHemisphere()
 void EmitterCube()
 {
 	//Get a random position within the extremeties of EmissionData
-
-	//float randomX = Random(vec2(time, gl_GlobalInvocationID.x)) * 2 * EmissionData.x - EmissionData.x; 
-	//float randomY = Random(vec2(time, randomX)) * 2 * EmissionData.y - EmissionData.y;
-	//float randomZ = Random(vec2(time, randomY)) * 2 * EmissionData.z - EmissionData.z;
-
 	float randomX = (particlesB.particles[gl_GlobalInvocationID.x].random.x * 2 * EmissionData.x) - EmissionData.x; 
 	float randomY = (particlesB.particles[gl_GlobalInvocationID.x].random.y * 2 * EmissionData.y) - EmissionData.y;
 	float randomZ = (particlesB.particles[gl_GlobalInvocationID.x].random.z * 2 * EmissionData.z) - EmissionData.z;
@@ -208,6 +203,56 @@ void EmitterCube()
 
 void EmitterCone()
 {
+}
+
+void EmissionVelocity()
+{
+	if(SSBOswitch)
+	{
+		if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.y == 1.0f)
+		{
+			vec3 dir = normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz);
+			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
+		}
+		else if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.z == 1.0f)
+		{
+		
+			float x = particlesA.particles[gl_GlobalInvocationID.x].random.x * 2.0f - 1.0f;
+			float y = particlesA.particles[gl_GlobalInvocationID.x].random.y * 2.0f - 1.0f;
+			float z = particlesA.particles[gl_GlobalInvocationID.x].random.z * 2.0f - 1.0f;
+		
+			vec3 dir = vec3(x, y, z);
+			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
+		}
+		else
+		{
+			vec3 dir = vec3(1, 0, 0);
+			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
+		}
+	}
+	else
+	{
+		if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.y == 1.0f)
+		{
+			vec3 dir = normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz);
+			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
+		}
+		else if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.z == 1.0f)
+		{
+		
+			float x =particlesB.particles[gl_GlobalInvocationID.x].random.x * 2.0f - 1.0f;
+			float y =particlesB.particles[gl_GlobalInvocationID.x].random.y * 2.0f - 1.0f;
+			float z =particlesB.particles[gl_GlobalInvocationID.x].random.z * 2.0f - 1.0f;
+		
+			vec3 dir = vec3(x, y, z);
+			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
+		}
+		else
+		{
+			vec3 dir = vec3(1, 0, 0);
+			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
+		}
+	}
 }
 
 void Emission()
@@ -236,100 +281,114 @@ void Emission()
 
 void ResetParticle()
 {
-	particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesA.particles[gl_GlobalInvocationID.x].initvelocity.xyz;
+	particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = vec3(0,0,0);
 	particlesA.particles[gl_GlobalInvocationID.x].force.xyz = particlesA.particles[gl_GlobalInvocationID.x].initforce.xyz;	
 	particlesA.particles[gl_GlobalInvocationID.x].velocity.w = 0.0;
 	particlesA.particles[gl_GlobalInvocationID.x].force.w = 0.0;
 	particlesA.particles[gl_GlobalInvocationID.x].position.w = 1.0;
 
-	particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesB.particles[gl_GlobalInvocationID.x].initvelocity.xyz;
+	particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = vec3(0,0,0);
 	particlesB.particles[gl_GlobalInvocationID.x].force.xyz = particlesB.particles[gl_GlobalInvocationID.x].initforce.xyz;
 	particlesB.particles[gl_GlobalInvocationID.x].velocity.w = 0.0;
 	particlesB.particles[gl_GlobalInvocationID.x].force.w = 0.0;
 	particlesB.particles[gl_GlobalInvocationID.x].position.w = 1.0;
 }
 
-void AddForce()
+vec3 GetSplineForce()
 {
-	//vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force), spline_force);
-	//
-	//vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z);
-
-
 	if(SSBOswitch)
 	{
-		vec3 splineData = GetPointOnSpline(particlesA.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
-		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z);
-
-		particlesB.particles[gl_GlobalInvocationID.x].force.xyz = particlesA.particles[gl_GlobalInvocationID.x].force.xyz + normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.2f;
+		float normalizedAge = particlesA.particles[gl_GlobalInvocationID.x].velocity.w /particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec3(GetSplineValue(normalizedAge, spline_force_x), GetSplineValue(normalizedAge, spline_force_y), GetSplineValue(normalizedAge, spline_force_z));
 	}
-
 	else
 	{
-		vec3 splineData = GetPointOnSpline(particlesA.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
-		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z);
-
-		particlesA.particles[gl_GlobalInvocationID.x].force.xyz = particlesB.particles[gl_GlobalInvocationID.x].force.xyz + normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 0.2f;
+		float normalizedAge = particlesB.particles[gl_GlobalInvocationID.x].velocity.w /particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec3(GetSplineValue(normalizedAge, spline_force_x), GetSplineValue(normalizedAge, spline_force_y), GetSplineValue(normalizedAge, spline_force_z));
 	}
 }
 
 void CalculateForce()
 {
-	float attractiveForce = 10f;
+	
+}
+
+
+vec3 GetSplineVelocityLinear()
+{
 	if(SSBOswitch)
 	{
-		attractiveForce = length(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * 20.0f;
-		particlesB.particles[gl_GlobalInvocationID.x].force.xyz = normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * attractiveForce;
+		float normalizedAge = particlesA.particles[gl_GlobalInvocationID.x].velocity.w /particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec3(GetSplineValue(normalizedAge, spline_velocity_linear_x), GetSplineValue(normalizedAge, spline_velocity_linear_y), GetSplineValue(normalizedAge, spline_velocity_linear_z));
 	}
 
 	else
 	{
-		attractiveForce = length(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * 20.0f;
-		particlesA.particles[gl_GlobalInvocationID.x].force.xyz =  normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * attractiveForce;
+		float normalizedAge = particlesB.particles[gl_GlobalInvocationID.x].velocity.w /particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec3(GetSplineValue(normalizedAge, spline_velocity_linear_x), GetSplineValue(normalizedAge, spline_velocity_linear_y), GetSplineValue(normalizedAge, spline_velocity_linear_z));
 	}
-	
+}
+
+vec3 GetSplineVelocityOrbital()
+{
+	if(SSBOswitch)
+	{
+		float normalizedAge = particlesA.particles[gl_GlobalInvocationID.x].velocity.w /particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec3(GetSplineValue(normalizedAge, spline_velocity_orbital_x), GetSplineValue(normalizedAge, spline_velocity_orbital_y), GetSplineValue(normalizedAge, spline_velocity_orbital_z));
+	}
+
+	else
+	{
+		float normalizedAge = particlesB.particles[gl_GlobalInvocationID.x].velocity.w /particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec3(GetSplineValue(normalizedAge, spline_velocity_orbital_x), GetSplineValue(normalizedAge, spline_velocity_orbital_y), GetSplineValue(normalizedAge, spline_velocity_orbital_z));
+	}
+}
+
+vec4 GetSplineColour()
+{
+	if(SSBOswitch)
+	{
+		float normalizedAge = particlesA.particles[gl_GlobalInvocationID.x].velocity.w /particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec4(GetSplineValue(normalizedAge, spline_colour_r), GetSplineValue(normalizedAge, spline_colour_g), GetSplineValue(normalizedAge, spline_colour_b), GetSplineValue(normalizedAge, spline_colour_a));
+	}
+
+	else
+	{
+		float normalizedAge = particlesB.particles[gl_GlobalInvocationID.x].velocity.w /particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w;
+		return vec4(GetSplineValue(normalizedAge, spline_colour_r), GetSplineValue(normalizedAge, spline_colour_g), GetSplineValue(normalizedAge, spline_colour_b), GetSplineValue(normalizedAge, spline_colour_a));
+	}
+}
+
+
+
+void AddOrbitalVelocity()
+{
+	if(SSBOswitch)
+	{
+		vec3 dir = -particlesA.particles[gl_GlobalInvocationID.x].position.xyz;
+	}
+	else
+	{
+		vec3 dir = -particlesB.particles[gl_GlobalInvocationID.x].position.xyz;
+		
+	}
 }
 void IntegrateAcceleration()
 {
 	if(SSBOswitch)
 	{
-		vec3 dVel = particlesA.particles[gl_GlobalInvocationID.x].force.xyz * dt;
-		vec3 vel = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + dVel;
+		vec3 dVel = GetSplineForce() * dt;
+		vec3 vel = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + GetSplineVelocityLinear() + dVel;
 		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = vel;
 	}
 
 	else
 	{
-		vec3 dVel = particlesB.particles[gl_GlobalInvocationID.x].force.xyz * dt;
-		vec3 vel = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + dVel;
+		vec3 dVel = GetSplineForce() * dt;
+		vec3 vel = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + GetSplineVelocityLinear() + dVel;
 		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = vel;
 	}
 }
-
-void AddVelocityFromSpline()
-{
-	//vec3 splineData = GetPointOnSpline(GetSplineTime(spline_force_totalLength, spline_force), spline_force);
-
-	//vec3 splineInfluence = vec3(splineData.x / spline_force_maxValues.x, splineData.y / spline_force_maxValues.y, splineData.z / spline_force_maxValues.z );
-
-
-	if(SSBOswitch)
-	{
-		vec3 splineData = GetPointOnSpline(particlesA.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
-		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z  );
-		
-		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 1.5f;
-	}
-
-	else
-	{
-		vec3 splineData = GetPointOnSpline(particlesB.particles[gl_GlobalInvocationID.x].velocity.w * 6 / particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w, spline_force);
-
-		vec3 splineInfluence = vec3(splineData.x, splineData.y , splineData.z  );
-		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz) * splineInfluence * 1.5f;
-	}
-}
-
 void IntegreatVelocity()
 {
 	if(SSBOswitch)
@@ -349,39 +408,20 @@ void IntegreatVelocity()
 
 void CalculateColour()
 {
-	float red	= 1;
-	float green = 1;
-	float blue	= 1;
-	float alpha;
-
-	vec3 splineData = GetPointOnSpline(GetSplineTime(spline_colour_totalLength, spline_colour), spline_colour);
-
-	//splineData = clamp(splineData, vec3(0.0f,0.0f,0.0f), vec3(1.0f, 1.0f,1.0f));
-
-	//float red = splineData.x;
-
 	if(SSBOswitch)
 	{
-		//if(particlesA.particles[gl_GlobalInvocationID.x].lifetime.y < particlesA.particles[gl_GlobalInvocationID.x].lifetime.x)
-		//	alpha = 1;
-		//else
-		//	alpha = 0;
+		particlesB.particles[gl_GlobalInvocationID.x].colour = GetSplineColour();
 
-		alpha = particlesA.particles[gl_GlobalInvocationID.x].position.w;
-		particlesB.particles[gl_GlobalInvocationID.x].colour = vec4(red,green,blue,alpha);
-		//particlesB.particles[gl_GlobalInvocationID.x].colour = vec4(splineData,alpha);
+		if(particlesA.particles[gl_GlobalInvocationID.x].position.w != 1.f)
+			particlesB.particles[gl_GlobalInvocationID.x].colour.a = 0.f;
 	}
 
 	else
 	{
-		//if(particlesB.particles[gl_GlobalInvocationID.x].lifetime.y < particlesB.particles[gl_GlobalInvocationID.x].lifetime.x)
-		//	alpha = 1;
-		//else
-		//	alpha = 0;
-		alpha = particlesB.particles[gl_GlobalInvocationID.x].position.w;
+		particlesA.particles[gl_GlobalInvocationID.x].colour = GetSplineColour();
 
-		particlesA.particles[gl_GlobalInvocationID.x].colour = vec4(red,green,blue,alpha);
-		//particlesA.particles[gl_GlobalInvocationID.x].colour = vec4(splineData,alpha);
+		if(particlesB.particles[gl_GlobalInvocationID.x].position.w != 1.f)
+			particlesA.particles[gl_GlobalInvocationID.x].colour.a = 0.f;
 	}
 }
 
@@ -391,11 +431,7 @@ void UpdateLifeTime()
 	{		
 		if(particlesA.particles[gl_GlobalInvocationID.x].position.w == 1.0)
 		{
-			//AddForce();
-			//CalculateForce();
 			IntegrateAcceleration();
-	
-			AddVelocityFromSpline();
 			IntegreatVelocity();
 
 			if(particlesA.particles[gl_GlobalInvocationID.x].velocity.w < particlesA.particles[gl_GlobalInvocationID.x].initvelocity.w)
@@ -417,6 +453,7 @@ void UpdateLifeTime()
 			{
 				ResetParticle();
 				Emission();
+				EmissionVelocity();
 			}
 		}
 	}												  												  
@@ -424,11 +461,7 @@ void UpdateLifeTime()
 	{
 		if(particlesB.particles[gl_GlobalInvocationID.x].position.w == 1.0)
 		{
-			//AddForce();
-			//CalculateForce();
 			IntegrateAcceleration();
-
-			AddVelocityFromSpline();
 			IntegreatVelocity();
 
 			if(particlesB.particles[gl_GlobalInvocationID.x].velocity.w < particlesB.particles[gl_GlobalInvocationID.x].initvelocity.w)
@@ -449,6 +482,7 @@ void UpdateLifeTime()
 			{
 				ResetParticle();
 				Emission();
+				EmissionVelocity();
 			}
 		}
 	}
