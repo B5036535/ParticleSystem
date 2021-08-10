@@ -5,10 +5,14 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 uniform bool SSBOswitch;
 uniform float dt;
 uniform float time;
-uniform int	EmissionType;
+uniform ivec3 types;
 uniform vec3 EmissionData;
 
+uniform vec3	vec_force;
+uniform vec3	vec_force_max;
 
+uniform vec3	vec_velocity_linear;
+uniform vec3	vec_velocity_linear_max;
 
 uniform vec4	spline_force_x[8];
 uniform vec4	spline_force_y[8];
@@ -23,11 +27,22 @@ uniform vec4	spline_velocity_orbital_y[8];
 uniform vec4	spline_velocity_orbital_z[8];
 uniform vec4	spline_velocity_orbital_r[8];
 
+uniform vec4	vec_colour;
+
 uniform vec4	spline_colour_r[8];
 uniform vec4	spline_colour_g[8];
 uniform vec4	spline_colour_b[8];
 uniform vec4	spline_colour_a[8];
 
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projMatrix;
+
+uniform float near;
+uniform float far;
+
+uniform sampler2D tex_depth;
+uniform sampler2D tex_normals;
 
 struct Particle
 {
@@ -38,6 +53,7 @@ struct Particle
 	vec4 initforce;
 	vec4 force;
 	vec4 random;
+	vec4 collision;
 };
 
 layout (std430, binding  = 1) buffer SSBOStructA
@@ -257,23 +273,23 @@ void EmissionVelocity()
 
 void Emission()
 {
-	if(EmissionType == 1)
+	if(types.x == 1)
 	{
 		EmitterRing();
 	}
-	else if(EmissionType == 2)
+	else if(types.x == 2)
 	{
 		EmitterCube();
 	}
-	else if(EmissionType == 4)
+	else if(types.x == 4)
 	{
 		EmitterSphere();
 	}
-	else if(EmissionType == 8)
+	else if(types.x == 8)
 	{
 		EmitterHemisphere();
 	}
-	else if(EmissionType == 16)
+	else if(types.x == 16)
 	{
 		EmitterCone();
 	}
@@ -286,12 +302,14 @@ void ResetParticle()
 	particlesA.particles[gl_GlobalInvocationID.x].velocity.w = 0.0;
 	particlesA.particles[gl_GlobalInvocationID.x].force.w = 0.0;
 	particlesA.particles[gl_GlobalInvocationID.x].position.w = 1.0;
+	particlesA.particles[gl_GlobalInvocationID.x].collision.y = 0.0;
 
 	particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = vec3(0,0,0);
 	particlesB.particles[gl_GlobalInvocationID.x].force.xyz = particlesB.particles[gl_GlobalInvocationID.x].initforce.xyz;
 	particlesB.particles[gl_GlobalInvocationID.x].velocity.w = 0.0;
 	particlesB.particles[gl_GlobalInvocationID.x].force.w = 0.0;
 	particlesB.particles[gl_GlobalInvocationID.x].position.w = 1.0;
+	particlesB.particles[gl_GlobalInvocationID.x].collision.y = 0.0;
 }
 
 vec3 GetSplineForce()
@@ -308,10 +326,6 @@ vec3 GetSplineForce()
 	}
 }
 
-void CalculateForce()
-{
-	
-}
 
 
 vec3 GetSplineVelocityLinear()
@@ -360,7 +374,6 @@ vec4 GetSplineColour()
 }
 
 
-
 void AddOrbitalVelocity()
 {
 	if(SSBOswitch)
@@ -372,6 +385,31 @@ void AddOrbitalVelocity()
 		vec3 dir = -particlesB.particles[gl_GlobalInvocationID.x].position.xyz;
 		
 	}
+}
+
+vec3 GetForce()
+{
+	if(types.y == 0)
+		return vec_force;
+
+	if(types.y == 1)
+		return vec_force;
+
+	else
+		return GetSplineForce();
+
+}
+
+vec3 GetLinearVelocity()
+{
+	if(types.y == 0)
+		return vec_velocity_linear;
+
+	if(types.y == 1)
+		return vec_velocity_linear;
+
+	else
+		return GetSplineVelocityLinear();
 }
 void IntegrateAcceleration()
 {
@@ -406,11 +444,85 @@ void IntegreatVelocity()
 	}
 }
 
+void OnCollision()
+{
+	particlesA.particles[gl_GlobalInvocationID.x].collision.y = 1.0f;
+	particlesB.particles[gl_GlobalInvocationID.x].collision.y = 1.0f;
+
+	particlesA.particles[gl_GlobalInvocationID.x].colour.rgb = vec3(1.0f,0.0f,0.0f);
+	particlesB.particles[gl_GlobalInvocationID.x].colour.rgb = vec3(1.0f,0.0f,0.0f);
+}
+
+void ResolveCollision(vec2 texCoords, float penetration)
+{
+	vec3 normal = texture2D(tex_normals, texCoords).rgb * 2.0f - 1.0f;
+	float cRestitution = 1.0f; //fully elastic
+	if(SSBOswitch)
+	{
+		particlesB.particles[gl_GlobalInvocationID.x].position.xyz += penetration * normal;
+		float impulseForce = dot(particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz, normal.rgb);
+		float j = (-(1.0f + cRestitution) * impulseForce);
+		vec3 fullImpulse = normal * j;
+		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz += fullImpulse;
+	}
+	else
+	{
+		particlesA.particles[gl_GlobalInvocationID.x].position.xyz += penetration * normal;
+		float impulseForce = dot(particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz, normal.rgb);
+		float j = (-(1.0f + cRestitution) * impulseForce);
+		vec3 fullImpulse = normal * j;
+		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz += fullImpulse;
+	}
+}
+
+float LinearDepth(float expDepth)
+{
+	float z  = expDepth * 2.0f - 1.0f;
+	return (2.0f * near * far) + (far + near - z * (far - near));
+}
+
+void CollisionDetection()
+{
+	vec3 cameraSpace;
+	if(SSBOswitch)
+	{
+		cameraSpace = (projMatrix * viewMatrix * modelMatrix * vec4(particlesA.particles[gl_GlobalInvocationID.x].position.xyz,1.0)).xyz;
+	}
+	else
+	{
+		cameraSpace = (projMatrix * viewMatrix * modelMatrix * vec4(particlesB.particles[gl_GlobalInvocationID.x].position.xyz,1.0)).xyz;
+	}
+	vec3 NDCSpace = cameraSpace.xyz * 2.0f - 1.0f;
+	//float expDepth = texture2D(tex_depth, NDCSpace.xy).r;
+	float depth = texture2D(tex_depth, NDCSpace.xy).r * far;
+	
+	if(NDCSpace.z > depth)
+	{
+		float penetration = (NDCSpace.z * -1.0f - depth) * (far - near);
+		ResolveCollision(NDCSpace.xy, penetration);
+		OnCollision();
+	}
+	
+}
+
+vec4 GetColour()
+{
+	if(types.z == 0)
+		return vec_colour;
+
+	if(types.z == 1)
+		return vec_colour;
+
+	else
+		return GetSplineColour();
+
+}
+
 void CalculateColour()
 {
 	if(SSBOswitch)
 	{
-		particlesB.particles[gl_GlobalInvocationID.x].colour = GetSplineColour();
+		particlesB.particles[gl_GlobalInvocationID.x].colour = GetColour();
 
 		if(particlesA.particles[gl_GlobalInvocationID.x].position.w != 1.f)
 			particlesB.particles[gl_GlobalInvocationID.x].colour.a = 0.f;
@@ -418,7 +530,7 @@ void CalculateColour()
 
 	else
 	{
-		particlesA.particles[gl_GlobalInvocationID.x].colour = GetSplineColour();
+		particlesA.particles[gl_GlobalInvocationID.x].colour = GetColour();
 
 		if(particlesB.particles[gl_GlobalInvocationID.x].position.w != 1.f)
 			particlesA.particles[gl_GlobalInvocationID.x].colour.a = 0.f;
@@ -489,7 +601,11 @@ void UpdateLifeTime()
 }
 void main(void)
 {
-		
-	UpdateLifeTime();	
-	CalculateColour();	
+	if(particlesA.particles[gl_GlobalInvocationID.x].collision.x == 1.0f)
+		CollisionDetection();
+
+	UpdateLifeTime();
+
+	if(particlesA.particles[gl_GlobalInvocationID.x].collision.y != 1.0f)
+		CalculateColour();	
 }

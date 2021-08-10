@@ -35,6 +35,7 @@ float noise (in vec2 st) {
     float c = random(i + vec2(0.0, 1.0));
     float d = random(i + vec2(1.0, 1.0));
 
+
     // Smooth Interpolation
 
     // Cubic Hermine Curve.  Same as SmoothStep()
@@ -42,13 +43,14 @@ float noise (in vec2 st) {
     // u = smoothstep(0.,1.,f);
 
     // Mix 4 coorners percentages
-    return mix(a, b, u.x) +
+    return  mix(a, b, u.x) +
             (c - a)* u.y * (1.0 - u.x) +
             (d - b) * u.x * u.y;
 }
 
 void main() {
     vec2 st = IN.texCoord.xy/u_resolution.xy;
+    //vec2 st = IN.texCoord.xy/ 1;
 
     // Scale the coordinate system to see
     // some noise in action

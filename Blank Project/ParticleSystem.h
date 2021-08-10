@@ -19,6 +19,19 @@ enum class EmitterType
 	POINT = 32,
 };
 
+enum class MotionType
+{
+	CONSTANT,
+	RANDOM_BETWEEN_TWO,
+	SPLINE
+};
+
+enum class AppearanceType
+{
+	CONSTANT,
+	TEXTURE,
+	SPLINE
+};
 struct Particle
 {
 	Vector4 colour;
@@ -28,6 +41,7 @@ struct Particle
 	Vector4 initforce;
 	Vector4 force;
 	Vector4 random;
+	Vector4 collision;
 };
 
 struct ParticleSystemData
@@ -37,7 +51,7 @@ public:
 	ParticleSystemData();
 
 
-	ParticleSystemData(Mesh* m, int instances, float lTime, float eTime, EmitterType type, Vector3 eData);
+	ParticleSystemData(Mesh* m, int instances, float lTime, float eTime, EmitterType eType, Vector3 eData, MotionType mType, AppearanceType aType,unsigned int depthTex, unsigned int normalTex);
 
 
 	~ParticleSystemData()
@@ -57,6 +71,13 @@ public:
 
 	Spline		colour[4];
 
+	Vector3 vec_force;
+	Vector3 vec_force_max;
+	Vector3 vec_linearVelocity;
+	Vector3 vec_linearVelocity_max;
+
+	Vector4 vec_colour;
+
 	bool DataCheck();
 
 	void SetMesh(Mesh* mesh);
@@ -71,7 +92,15 @@ public:
 	void SetEmitter(float time, EmitterType type, Vector3 d);
 	float GetEmissionTime();
 	EmitterType GetEmitterType();
+	MotionType GetMotionType();
+	AppearanceType GetAppearanceType();
 	Vector3 GetEmissionData();
+
+	void ConstantMotion(Vector3 force, Vector3 linearVelocity);
+	void RandomMotion(Vector3 forceMin, Vector3 forceMax, Vector3 linearVelocityMin, Vector3 linearVelocityMax);
+
+	void ConstantAppearance(Vector4 colour);
+	void TexturedAppearance(unsigned int texture);
 
 	void FillSplineForce(const Spline x, const Spline y, const Spline z);
 	void FillSplineVelocityLinear(Spline x, Spline y, Spline z);
@@ -81,6 +110,9 @@ public:
 
 	void GenerateNoise();
 
+	int GetTexAppearance() { return tex_appearance; }
+	int GetTexDepth() { return tex_depth; };
+	int GetTexNormal() { return tex_normals; };
 private:
 
 	const int NUMBER_OF_DATA = 9;
@@ -88,16 +120,23 @@ private:
 	Mesh* mesh;
 	int	NUMBER_OF_INSTANCES;
 	float MAX_LIFE_TIME;
-	float EMISSION_TIME;
-
 
 	EmitterType emitter;
+	MotionType motion;
+	AppearanceType appearance;
+
+	float EMISSION_TIME;
 	Vector3		emissionData;
 	bool* dataFilled;
+
+
 
 	unsigned int FBO_noise;
 	unsigned int tex_noise;
 	
+	unsigned int tex_appearance;
+	unsigned int tex_depth;
+	unsigned int tex_normals;
 };
 
 class ParticleSystem
@@ -113,7 +152,7 @@ public:
 	Spline	forceSpline;
 	Spline	colourSpline;
 
-	void Update(float dt);
+	void Update(float dt, Matrix4 model, Matrix4 view, Matrix4 projection);
 	void Render(Matrix4 model, Matrix4 view, Matrix4 projection);
 private:
 	float currentLifeTime;
@@ -126,12 +165,10 @@ private:
 	unsigned int	SSBO[2];
 	bool			SSBOswitch;
 
+	
 	unsigned int FBO_OIT;
-	unsigned int FBO_collision;
-	unsigned int tex_depth;
 	unsigned int tex_colour;
-	unsigned int buffer_accumulation;
-	unsigned int buffer_reveal;
+	
 
 	Shader*			shader_instance;
 	ComputeShader*	shader_compute;

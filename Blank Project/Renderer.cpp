@@ -1,10 +1,14 @@
 #include "Renderer.h"
 #include <algorithm>
+#include <ctime>
+
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	camera = new Camera(0, 0, Vector3(0, 0, 10));
 
 	triangle = Mesh::GenerateTriangle();
 	quad = Mesh::GenerateQuad();
+	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
+	box = Mesh::LoadFromMeshFile("Cube.msh");
 	screenQuad = Mesh::GenerateQuad();
 	float offset = 10.f;
 	int i = 0;
@@ -27,11 +31,75 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 
 	basicShader = new Shader("vertex_basic.glsl", "fragment_basic.glsl");
+	shader_opaque = new Shader("vertex_opaque.glsl", "fragment_opaque.glsl");
 	OITShader = new Shader("vertex_basicOIT.glsl", "fragment_OIT.glsl");
 	finalPassShader = new Shader("vertex_OITFinalPass.glsl", "fragment_OITFinalPass.glsl");
+	shader_noise = new Shader("vertex_OITFinalPass.glsl", "fragment_noise.glsl");
+
+
+	GenerateScreenTexture(tex_opaque);
+	GenerateScreenTexture(tex_depth_exponential, true);
+	GenerateScreenTexture(tex_depth_linear);
+	GenerateScreenTexture(tex_normal);
+
+	GenerateScreenTexture(tex_accumulation);
+	GenerateScreenTexture(tex_reveal);
+
+
+
+	glGenFramebuffers(1, &FBO_opaque);
+	GLenum OpaqueBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO_opaque);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_opaque, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex_normal, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, tex_depth_linear, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth_exponential, 0);
+	glDrawBuffers(3, OpaqueBuffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glGenFramebuffers(1, &FBO_OIT);
+	GLenum OITbuffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO_OIT);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_accumulation, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex_reveal, 0);
+	glDrawBuffers(2, OITbuffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+	glGenTextures(1, &tex_noise);
+	glBindTexture(GL_TEXTURE_2D, tex_noise);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	GLuint format = GL_RGBA16;
+	GLuint tType = GL_RGBA;
+
+	glTexImage2D(GL_TEXTURE_2D, 0, format, 256, 256, 0, tType, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	glGenFramebuffers(1, &FBO_noise);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO_noise);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_noise, 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
 	//basicComputeShader = new ComputeShader("compute_basic.glsl");
 
-	psData_A = new ParticleSystemData(quad, 100000, 5.f, 5.0f, EmitterType::SPHERE, Vector3(3,3,3));
+	psData_A = new ParticleSystemData(quad, 100000, 5.f, 5.0f, EmitterType::SPHERE, Vector3(3,3,3), tex_depth_linear, tex_normal);
 	psData_A->FillInitialForceAndVelocity(Vector3(), Vector3(50.f, 1.f, 0.f));
 	Vector2 array_colour_r[8] = 
 	{
@@ -251,7 +319,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	psData_B = new ParticleSystemData(quad, 100000, 5.f, 100.0f, EmitterType::CUBE, Vector3(2, 2, 2));
+	psData_B = new ParticleSystemData(quad, 100000, 8.f, 100.0f, EmitterType::CUBE, Vector3(2, 2, 2), tex_depth_linear, tex_normal);
 	psData_B->FillInitialForceAndVelocity(Vector3(), Vector3(50.f, 0.f, 1.f));
 	
 	array_colour_r[0] = Vector2(-0.1f, 0.0f);
@@ -456,7 +524,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//}
 
 
-	particleSystem = new ParticleSystem(psData_A);
+	particleSystem = new ParticleSystem(psData_B);
 
 
 	if (!basicShader->LoadSuccess() || !OITShader->LoadSuccess() || !finalPassShader->LoadSuccess())
@@ -465,24 +533,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 
 
-	GenerateScreenTexture(tex_accumulation);
-	GenerateScreenTexture(tex_reveal);
 
-	glGenFramebuffers(1, &FBO_OIT);
-	GLenum OITbuffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO_OIT);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_accumulation, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex_reveal, 0);
-	glDrawBuffers(2, OITbuffers);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		return;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
@@ -494,6 +546,13 @@ Renderer::~Renderer(void)
 	delete camera;
 	delete triangle;
 	delete quad;
+	delete sphere;
+	delete box;
+
+
+	for (int i = 0; i < NUM_IN_GRID; i++)
+		delete quads[i];
+
 	delete[] quads;
 	delete screenQuad;
 	delete basicShader;
@@ -507,8 +566,12 @@ Renderer::~Renderer(void)
 
 void Renderer::UpdateScene(float dt) 
 {
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	viewMatrix = camera->BuildViewMatrix();
+	modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(0.01f, 0.01f, 0.01f));
 	camera->UpdateCamera(dt);
-	//particleSystem->Update(dt);
+	particleSystem->Update(dt, modelMatrix, viewMatrix, projMatrix);
+
 	//glUseProgram(basicComputeShader->GetProgram());
 	//basicComputeShader->Dispatch(NUM_OF_INSTANCES, 1, 1);
 	//glUseProgram(0);
@@ -516,15 +579,6 @@ void Renderer::UpdateScene(float dt)
 
 void Renderer::RenderOITTestScene()
 {
-	glUseProgram(basicShader->GetProgram());
-	modelMatrix = Matrix4::Translation(Vector3(10, 0, -250)) * Matrix4::Scale(Vector3(100.0, 100.0, 100.0));
-	glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
-	glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);
-	glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "projMatrix"), 1, false, projMatrix.values);
-	quad->Draw();
-	glUseProgram(0);
-
-
 	glUseProgram(OITShader->GetProgram());
 	 
 	Vector4 glf = Vector4(1.f,1.f,1.f,1.f);
@@ -579,15 +633,71 @@ void Renderer::RenderOITTestScene()
 
 }
 
+void Renderer::RenderOpaqueScene()
+{
+	Vector4 glf = Vector4(1.f, 1.f, 1.f, 1.f);
+	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO_opaque);
+	glClearColor(0.2f, 0.2f, 0.2f, 1.f);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glClearBufferfv(GL_COLOR, 2, (float*)&glf);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glUseProgram(shader_opaque->GetProgram());
+	//glUseProgram(basicShader->GetProgram());//
+	glUniform1f(glGetUniformLocation(shader_opaque->GetProgram(), "near"), 1.0f);
+	glUniform1f(glGetUniformLocation(shader_opaque->GetProgram(), "far"), 15000.0f);
+
+	modelMatrix = Matrix4::Translation(Vector3(5, 0, 0)) * Matrix4::Rotation(90.f, Vector3(0, 1, 0)) * Matrix4::Scale(Vector3(20.0, 20.0, 20.0));
+	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "projMatrix"), 1, false, projMatrix.values);	
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);	 //
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "projMatrix"), 1, false, projMatrix.values);	 //
+	quad->Draw();
+	modelMatrix = Matrix4::Translation(Vector3(0, 0, -250.f)) * Matrix4::Scale(Vector3(50.0, 50.0, 50.0));
+	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
+	quad->Draw();
+	modelMatrix = Matrix4::Translation(Vector3(-100, 0, -1500)) * Matrix4::Scale(Vector3(10.0, 10.0, 10.0));
+	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
+	sphere->Draw();
+	modelMatrix = Matrix4::Translation(Vector3(100, 0, -100)) * Matrix4::Scale(Vector3(20.0, 20.0, 20.0)) * Matrix4::Rotation(30.f, Vector3(1,1,1));
+	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
+	box->Draw();
+	glUseProgram(0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::RenderNoise()
+{
+	glUseProgram(shader_noise->GetProgram());
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO_noise);
+	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glUniform2fv(glGetUniformLocation(shader_noise->GetProgram(), "u_resolution"), 1, (float*)&Vector2(256, 256));
+	glUniform2fv(glGetUniformLocation(shader_noise->GetProgram(), "u_randomSeed"), 1, (float*)&Vector2(static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX)));
+	//glUniform2fv(glGetUniformLocation(shader_noise->GetProgram(), "u_randomSeed"), 1, (float*)&Vector2(1, 1));
+	glUniform1f(glGetUniformLocation(shader_noise->GetProgram(), "u_time"), std::time(0));
+	quad->Draw();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
+
+}
+
 void Renderer::RenderScene() 
 {
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	viewMatrix = camera->BuildViewMatrix();
-	//modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(0.01f, 0.01f, 0.01f));
-	//particleSystem->Render(modelMatrix, viewMatrix, projMatrix);
-	RenderOITTestScene();
+	RenderOpaqueScene();
+	modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(0.01f, 0.01f, 0.01f));
+	particleSystem->Render(modelMatrix, viewMatrix, projMatrix);
+	//RenderOITTestScene();
+	//RenderNoise();
 }
 
 void Renderer::GenerateScreenTexture(GLuint& into, bool depth)
@@ -605,6 +715,11 @@ void Renderer::GenerateScreenTexture(GLuint& into, bool depth)
 
 	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Renderer::RecordFramerate(float dt)
+{
+
 }
 
 

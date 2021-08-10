@@ -18,6 +18,7 @@ struct Particle
 	vec4 initforce;
 	vec4 force;
 	vec4 random;
+	vec4 collision;
 };
 
 layout (std430, binding  = 1) buffer SSBOStructA
@@ -34,6 +35,7 @@ out Vertex
 {
 	vec4 colour;
 	vec2 texCoord;
+	float enabled;
 } OUT;
 
 void main(void)
@@ -45,11 +47,14 @@ void main(void)
 	{
 		pos = position + particlesB.particles[gl_InstanceID].position.xyz;
 		OUT.colour = particlesB.particles[gl_InstanceID].colour;
+		OUT.enabled = particlesB.particles[gl_InstanceID].position.w;
 	}
 	else
 	{
 		pos = position + particlesA.particles[gl_InstanceID].position.xyz;
-		OUT.colour = particlesB.particles[gl_InstanceID].colour;
+		OUT.colour = particlesA.particles[gl_InstanceID].colour;
+		OUT.enabled = particlesA.particles[gl_InstanceID].position.w;
+
 	}
 	OUT.texCoord = texCoord;
 	gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(pos, 1.0);
