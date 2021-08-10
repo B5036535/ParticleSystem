@@ -17,7 +17,7 @@ public:
 	void RenderNoise();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
 
-	void RecordFramerate(float dt);
+	
 protected:
 
 	//const static int NUM_OF_X = 4;

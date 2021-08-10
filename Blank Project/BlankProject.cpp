@@ -1,6 +1,12 @@
 #include "../NCLGL/window.h"
 #include "Renderer.h"
 
+int counterFrameRate = 0;
+//void RecordFramerate(float dt);
+//{
+//	counterFrameRate++;
+//
+//}
 int main()	{
 	Window w("Make your own project!", 1280, 720, false);
 
@@ -16,7 +22,7 @@ int main()	{
 	w.LockMouseToWindow(true);
 	w.ShowOSPointer(false);
 
-	while(w.UpdateWindow()  && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)){
+	while(w.UpdateWindow()  && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE) && counterFrameRate <= 500){
 		renderer.UpdateScene(w.GetTimer()->GetTimeDeltaSeconds());
 		renderer.RenderScene();
 		renderer.SwapBuffers();

@@ -29,6 +29,8 @@ ParticleSystemData::ParticleSystemData(Mesh* m, int instances, float lTime, floa
 	SetMaxLifeTime(lTime);
 	SetEmitter(eTime, eType, eData);
 
+	types.motion = mType;
+	types.appearance = aType;
 
 	tex_depth = depthTex;
 	tex_normals = normalTex;
@@ -82,7 +84,7 @@ float ParticleSystemData::GetMaxLifeTime()
 void ParticleSystemData::SetEmitter(float time, EmitterType type, Vector3 d)
 {
 	EMISSION_TIME = time;
-	emitter = type;
+	types.emission = type;
 	emissionData = d;
 	dataFilled[3] = true;
 }
@@ -92,15 +94,19 @@ float ParticleSystemData::GetEmissionTime()
 }
 EmitterType ParticleSystemData::GetEmitterType()
 {
-	return emitter;
+	return types.emission;
 }
 MotionType ParticleSystemData::GetMotionType()
 {
-	return motion;
+	return types.motion;
 }
 AppearanceType ParticleSystemData::GetAppearanceType()
 {
-	return appearance;
+	return types.appearance;
+}
+StageTypes ParticleSystemData::GetTypes()
+{
+	return types;
 }
 Vector3 ParticleSystemData::GetEmissionData()
 {
@@ -109,7 +115,7 @@ Vector3 ParticleSystemData::GetEmissionData()
 
 void ParticleSystemData::ConstantMotion(Vector3 force, Vector3 linearVelocity)
 {
-	if (motion != MotionType::CONSTANT)
+	if (types.motion != MotionType::CONSTANT)
 		return;
 
 	vec_force = force;
@@ -122,7 +128,7 @@ void ParticleSystemData::ConstantMotion(Vector3 force, Vector3 linearVelocity)
 
 void ParticleSystemData::RandomMotion(Vector3 forceMin, Vector3 forceMax, Vector3 linearVelocityMin, Vector3 linearVelocityMax)
 {
-	if (motion != MotionType::RANDOM_BETWEEN_TWO)
+	if (types.motion != MotionType::RANDOM_BETWEEN_TWO)
 		return;
 
 	vec_force = forceMin;
@@ -137,7 +143,7 @@ void ParticleSystemData::RandomMotion(Vector3 forceMin, Vector3 forceMax, Vector
 
 void ParticleSystemData::ConstantAppearance(Vector4 colour)
 {
-	if (appearance != AppearanceType::CONSTANT)
+	if (types.appearance != AppearanceType::CONSTANT)
 		return;
 
 	vec_colour = colour;
@@ -146,7 +152,7 @@ void ParticleSystemData::ConstantAppearance(Vector4 colour)
 
 void ParticleSystemData::TexturedAppearance(unsigned int texture)
 {
-	if (appearance != AppearanceType::TEXTURE)
+	if (types.appearance != AppearanceType::TEXTURE)
 		return;
 
 	tex_appearance = texture;
@@ -157,7 +163,7 @@ void ParticleSystemData::TexturedAppearance(unsigned int texture)
 
 void ParticleSystemData::FillSplineForce(const Spline x, const Spline y, const Spline z)
 {
-	if (motion != MotionType::SPLINE)
+	if (types.motion != MotionType::SPLINE)
 		return;
 
 	for (int i = 0; i < 8; i++)
@@ -182,7 +188,7 @@ void ParticleSystemData::FillSplineForce(const Spline x, const Spline y, const S
 }
 void ParticleSystemData::FillSplineVelocityLinear(Spline x, Spline y, Spline z)
 {
-	if (motion != MotionType::SPLINE)
+	if (types.motion != MotionType::SPLINE)
 		return;
 
 	for (int i = 0; i < 8; i++)
@@ -208,7 +214,7 @@ void ParticleSystemData::FillSplineVelocityLinear(Spline x, Spline y, Spline z)
 void ParticleSystemData::FillSplineVelocityOrbital(Spline x, Spline y, Spline z, Spline r)
 {
 
-	if (motion != MotionType::SPLINE)
+	if (types.motion != MotionType::SPLINE)
 		return;
 
 	for (int i = 0; i < 8; i++)
@@ -238,7 +244,7 @@ void ParticleSystemData::FillSplineVelocityOrbital(Spline x, Spline y, Spline z,
 }
 void ParticleSystemData::FillSplineColour(Spline r, Spline g, Spline b, Spline a)
 {
-	if (appearance != AppearanceType::SPLINE)
+	if (types.appearance != AppearanceType::SPLINE)
 		return;
 
 	for (int i = 0; i < 8; i++)
@@ -422,7 +428,8 @@ void ParticleSystem::Update(float dt, Matrix4 model, Matrix4 view, Matrix4 proje
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"dt"), dt);
 	//std::cout << std::time(0) << std::endl;
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"time"), std::time(0));
-	glUniform1i(glGetUniformLocation(shader_compute->GetProgram(),	"EmissionType"), (int)data->GetEmitterType());
+
+	glUniform3iv(glGetUniformLocation(shader_compute->GetProgram(), "types"), 1, (int*)&data->GetTypes());
 	glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "EmissionData"), 1, (float*)&data->GetEmissionData());
 
 	if (data->GetMotionType() == MotionType::CONSTANT)

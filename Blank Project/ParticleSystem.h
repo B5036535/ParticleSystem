@@ -32,6 +32,13 @@ enum class AppearanceType
 	TEXTURE,
 	SPLINE
 };
+
+struct StageTypes
+{
+	EmitterType emission;
+	MotionType motion;
+	AppearanceType appearance;
+};
 struct Particle
 {
 	Vector4 colour;
@@ -91,10 +98,14 @@ public:
 
 	void SetEmitter(float time, EmitterType type, Vector3 d);
 	float GetEmissionTime();
+
 	EmitterType GetEmitterType();
 	MotionType GetMotionType();
 	AppearanceType GetAppearanceType();
+	StageTypes GetTypes();
+
 	Vector3 GetEmissionData();
+
 
 	void ConstantMotion(Vector3 force, Vector3 linearVelocity);
 	void RandomMotion(Vector3 forceMin, Vector3 forceMax, Vector3 linearVelocityMin, Vector3 linearVelocityMax);
@@ -113,6 +124,7 @@ public:
 	int GetTexAppearance() { return tex_appearance; }
 	int GetTexDepth() { return tex_depth; };
 	int GetTexNormal() { return tex_normals; };
+
 private:
 
 	const int NUMBER_OF_DATA = 9;
@@ -121,9 +133,8 @@ private:
 	int	NUMBER_OF_INSTANCES;
 	float MAX_LIFE_TIME;
 
-	EmitterType emitter;
-	MotionType motion;
-	AppearanceType appearance;
+	
+	StageTypes types;
 
 	float EMISSION_TIME;
 	Vector3		emissionData;

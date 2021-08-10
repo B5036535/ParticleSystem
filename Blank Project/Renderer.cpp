@@ -12,21 +12,21 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	screenQuad = Mesh::GenerateQuad();
 	float offset = 10.f;
 	int i = 0;
-	for (int x = 0; x < NUM_OF_X; x++)
-	{
-		for (int y = 0; y < NUM_OF_Y; y++)
-		{
-			for (int z = 0; z < NUM_OF_Z; z++)
-			{
-				Vector4 colour = Vector4(std::min((float) x / (float)NUM_OF_X, 1.0f) , std::min((float)y / (float)NUM_OF_Y , 1.0f), 0.f, 1.0f - (float) z / (float) NUM_OF_Z);
-				//Vector4 colour = Vector4((float)rand() / (float)RAND_MAX, (float) rand() / (float) RAND_MAX, (float) rand() / (float) RAND_MAX,(float) z / (float) NUM_OF_Z);
-				//Vector4 colour = Vector4(1, 0, 0, 1);
-				quads[i] = Mesh::GenerateQuad();
-				quads[i]->UpdateColour(colour);
-				i++;
-			}
-		}
-	}
+	//for (int x = 0; x < NUM_OF_X; x++)
+	//{
+	//	for (int y = 0; y < NUM_OF_Y; y++)
+	//	{
+	//		for (int z = 0; z < NUM_OF_Z; z++)
+	//		{
+	//			Vector4 colour = Vector4(std::min((float) x / (float)NUM_OF_X, 1.0f) , std::min((float)y / (float)NUM_OF_Y , 1.0f), 0.f, 1.0f - (float) z / (float) NUM_OF_Z);
+	//			//Vector4 colour = Vector4((float)rand() / (float)RAND_MAX, (float) rand() / (float) RAND_MAX, (float) rand() / (float) RAND_MAX,(float) z / (float) NUM_OF_Z);
+	//			//Vector4 colour = Vector4(1, 0, 0, 1);
+	//			quads[i] = Mesh::GenerateQuad();
+	//			quads[i]->UpdateColour(colour);
+	//			i++;
+	//		}
+	//	}
+	//}
 
 
 
@@ -99,7 +99,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	//basicComputeShader = new ComputeShader("compute_basic.glsl");
 
-	psData_A = new ParticleSystemData(quad, 100000, 5.f, 5.0f, EmitterType::SPHERE, Vector3(3,3,3), tex_depth_linear, tex_normal);
+	psData_A = new ParticleSystemData(quad, 100000, 5.f, 5.0f, EmitterType::SPHERE, Vector3(3,3,3), MotionType::SPLINE, AppearanceType::SPLINE, tex_depth_linear, tex_normal);
 	psData_A->FillInitialForceAndVelocity(Vector3(), Vector3(50.f, 1.f, 0.f));
 	Vector2 array_colour_r[8] = 
 	{
@@ -319,7 +319,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	psData_B = new ParticleSystemData(quad, 100000, 8.f, 100.0f, EmitterType::CUBE, Vector3(2, 2, 2), tex_depth_linear, tex_normal);
+	psData_B = new ParticleSystemData(quad, 100000, 8.f, 100.0f, EmitterType::CUBE, Vector3(2, 2, 2), MotionType::SPLINE, AppearanceType::SPLINE,tex_depth_linear, tex_normal);
 	psData_B->FillInitialForceAndVelocity(Vector3(), Vector3(50.f, 0.f, 1.f));
 	
 	array_colour_r[0] = Vector2(-0.1f, 0.0f);
@@ -550,10 +550,10 @@ Renderer::~Renderer(void)
 	delete box;
 
 
-	for (int i = 0; i < NUM_IN_GRID; i++)
-		delete quads[i];
-
-	delete[] quads;
+	//for (int i = 0; i < NUM_IN_GRID; i++)
+	//	delete quads[i];
+	//
+	//delete[] quads;
 	delete screenQuad;
 	delete basicShader;
 	delete OITShader;
@@ -592,22 +592,22 @@ void Renderer::RenderOITTestScene()
 	glBlendFunci(1, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
 	
 	int i = 0;
-	for (int x = 0; x < NUM_OF_X; x++)
-	{
-		for (int y = 0; y < NUM_OF_Y; y++)
-		{
-			for (int z = 0; z < NUM_OF_Z; z++)
-			{
-				Vector3 position = Vector3(x, y, -z) * 10.f;
-				modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(1.0, 1.0, 1.0));
-				glUniformMatrix4fv(glGetUniformLocation(OITShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
-				glUniformMatrix4fv(glGetUniformLocation(OITShader->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);
-				glUniformMatrix4fv(glGetUniformLocation(OITShader->GetProgram(), "projMatrix"), 1, false, projMatrix.values);
-				quads[i]->Draw();
-				i++;
-			}
-		}
-	}
+	//for (int x = 0; x < NUM_OF_X; x++)
+	//{
+	//	for (int y = 0; y < NUM_OF_Y; y++)
+	//	{
+	//		for (int z = 0; z < NUM_OF_Z; z++)
+	//		{
+	//			Vector3 position = Vector3(x, y, -z) * 10.f;
+	//			modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(1.0, 1.0, 1.0));
+	//			glUniformMatrix4fv(glGetUniformLocation(OITShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+	//			glUniformMatrix4fv(glGetUniformLocation(OITShader->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);
+	//			glUniformMatrix4fv(glGetUniformLocation(OITShader->GetProgram(), "projMatrix"), 1, false, projMatrix.values);
+	//			quads[i]->Draw();
+	//			i++;
+	//		}
+	//	}
+	//}
 	glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
@@ -717,9 +717,5 @@ void Renderer::GenerateScreenTexture(GLuint& into, bool depth)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Renderer::RecordFramerate(float dt)
-{
-
-}
 
 
