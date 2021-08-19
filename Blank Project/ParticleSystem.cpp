@@ -18,7 +18,7 @@ ParticleSystemData::ParticleSystemData()
 }
 
 
-ParticleSystemData::ParticleSystemData(Mesh* m, int instances, float lTime, float eTime, EmitterType eType, Vector3 eData, MotionType mType, AppearanceType aType, unsigned int depthTex, unsigned int normalTex)
+ParticleSystemData::ParticleSystemData(Mesh* m, int instances, float lTime, float eTime, EmitterType eType, Vector3 eData, MotionType mType, AppearanceType aType, bool collision, unsigned int depthTex, unsigned int normalTex)
 {
 	dataFilled = new bool[NUMBER_OF_DATA];
 	for (int i = 0; i < NUMBER_OF_DATA; i++)
@@ -31,6 +31,8 @@ ParticleSystemData::ParticleSystemData(Mesh* m, int instances, float lTime, floa
 
 	types.motion = mType;
 	types.appearance = aType;
+
+	this->collision = collision;
 
 	tex_depth = depthTex;
 	tex_normals = normalTex;
@@ -324,35 +326,6 @@ void ParticleSystemData::GenerateNoise()
 	delete shader_noise;
 }
 
-//ParticleSystem::ParticleSystem(float lifetime, float emissionTime,Mesh* mesh, EmitterType type)
-//	:
-//	SSBOswitch(true),
-//	MAX_LIFE_TIME(lifetime),
-//	EMISSION_TIME(emissionTime),
-//	currentLifeTime(0.f)
-//{
-//	this->mesh = mesh;
-//	this->type = type;
-//
-//	
-//	emissionData = Vector3(10, 10, 10);
-//
-//	shader_instance = new Shader("vertex_particle.glsl", "fragment_basic.glsl");
-//	shader_compute = new ComputeShader("compute_particle.glsl");
-//
-//	if (!shader_instance->LoadSuccess()) 
-//	{
-//		return;
-//	}
-//
-//	glBindFramebuffer(GL_FRAMEBUFFER, FBO_OIT);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_ACCUM, GL_TEXTURE_2D, buffer_accumulation, 0);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffer_reveal, 0);
-//
-//
-//	Initialize();
-//}
-
 ParticleSystem::ParticleSystem(ParticleSystemData* d)
 {
 
@@ -365,7 +338,6 @@ ParticleSystem::ParticleSystem(ParticleSystemData* d)
 	shader_instance = new Shader("vertex_particle.glsl", "fragment_particle.glsl");
 	shader_compute = new ComputeShader("compute_particle.glsl");
 	
-	//|| !shader_compute->LoadSuccess()
 	if (!shader_instance->LoadSuccess() )
 	{
 		return;
@@ -379,7 +351,7 @@ ParticleSystem::ParticleSystem(ParticleSystemData* d)
 
 ParticleSystem::~ParticleSystem()
 {
-	//delete mesh;
+	//mesh deleted in renderer
 	delete shader_instance;
 	delete shader_compute;
 }
@@ -390,19 +362,14 @@ void ParticleSystem::Initialize()
 	
 	for (int i = 0; i < data->GetNumberOfInstances(); i++)
 	{
-		//particles[i].lifetime	= Vector4(MAX_LIFE_TIME, MAX_LIFE_TIME, EMISSION_TIME, (static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * EMISSION_TIME);
-		//particles[i].lifetime	= Vector4(MAX_LIFE_TIME, MAX_LIFE_TIME, EMISSION_TIME, 0);
-		//std::cout << particles[i].lifetime.w << std::endl;
 		particles[i].colour			= Vector4(1.0f, 0.0f, 1.f, 1.f);
 		particles[i].position		= Vector4(0.f,0.f,0.f, 0.f);
-		//particles[i].velocity		= Vector4(0.f,0.f,0.f, 0.f);
 		particles[i].initvelocity	= Vector4(data->inititialVelocity, data->GetMaxLifeTime());
 		particles[i].velocity		= Vector4(0.f, 0.f, 0.f, 0.f);
 		particles[i].initforce		= Vector4(data->initialForce, data->GetEmissionTime());
-		//particles[i].force			= Vector4(0.f,-5.f,0.f, 0);
 		particles[i].force			= Vector4(0.f,0.f,0.f, static_cast <float> (rand()) / static_cast <float> (RAND_MAX) * data->GetEmissionTime());
 		particles[i].random			= Vector4(static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
-		particles[i].collision		= Vector4(1.0f, 0.0f, 0.0f, 0.0f);
+		particles[i].collision		= Vector4(data->collision ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
 	}
 
 
@@ -420,13 +387,15 @@ void ParticleSystem::Initialize()
 	delete[] particles;
 }
 
+
+
 // Update particle SSBO i.e. Dispatch compute shader
 void ParticleSystem::Update(float dt, Matrix4 model, Matrix4 view, Matrix4 projection)
 {
 	glUseProgram(shader_compute->GetProgram());
 	glUniform1i(glGetUniformLocation(shader_compute->GetProgram(),	"SSBOswitch"), SSBOswitch);
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"dt"), dt);
-	//std::cout << std::time(0) << std::endl;
+
 	glUniform1f(glGetUniformLocation(shader_compute->GetProgram(),	"time"), std::time(0));
 
 	glUniform3iv(glGetUniformLocation(shader_compute->GetProgram(), "types"), 1, (int*)&data->GetTypes());
@@ -434,43 +403,43 @@ void ParticleSystem::Update(float dt, Matrix4 model, Matrix4 view, Matrix4 proje
 
 	if (data->GetMotionType() == MotionType::CONSTANT)
 	{
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_force"), 1, (float*) & (data->vec_force));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_velocity_linear"), 1, (float*) & (data->vec_linearVelocity));
+ 		glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_force"), 1, (float*)&data->vec_force);
+		glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_velocity_linear"), 1, (float*)&data->vec_linearVelocity);
 	}
-	else if (data->GetMotionType() == MotionType::RANDOM_BETWEEN_TWO)
+	if (data->GetMotionType() == MotionType::RANDOM_BETWEEN_TWO)
 	{
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_force"), 1, (float*) & (data->vec_force));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_force_max"), 1, (float*) & (data->vec_force_max));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_velocity_linear"), 1, (float*) & (data->vec_linearVelocity));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_velocity_linear_max"), 1, (float*) & (data->vec_linearVelocity_max));
+		glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_force"), 1, (float*)&data->vec_force);
+		glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_force_max"), 1, (float*)&data->vec_force_max);
+		glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_velocity_linear"), 1, (float*)&data->vec_linearVelocity);
+		glUniform3fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_velocity_linear_max"), 1, (float*)&data->vec_linearVelocity_max);
 	}
-	else
+	if(data->GetMotionType() == MotionType::SPLINE)
 	{
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_x"), 8, (float*) & (data->force[0].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_y"), 8, (float*) & (data->force[1].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_z"), 8, (float*) & (data->force[2].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_x"), 8, (float*)&(data->force[0].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_y"), 8, (float*)&(data->force[1].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_force_z"), 8, (float*)&(data->force[2].controlPoints));
 
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_linear_x"), 8, (float*) & (data->velocity_linear[0].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_linear_y"), 8, (float*) & (data->velocity_linear[1].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_linear_z"), 8, (float*) & (data->velocity_linear[2].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_linear_x"), 8, (float*)&(data->velocity_linear[0].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_linear_y"), 8, (float*)&(data->velocity_linear[1].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_linear_z"), 8, (float*)&(data->velocity_linear[2].controlPoints));
 
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_x"), 8, (float*) & (data->velocity_orbital[0].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_y"), 8, (float*) & (data->velocity_orbital[1].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_z"), 8, (float*) & (data->velocity_orbital[2].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_r"), 8, (float*) & (data->velocity_orbital[3].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_x"), 8, (float*)&(data->velocity_orbital[0].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_y"), 8, (float*)&(data->velocity_orbital[1].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_z"), 8, (float*)&(data->velocity_orbital[2].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_velocity_orbital_r"), 8, (float*)&(data->velocity_orbital[3].controlPoints));
 	}
 	
 
 	if (data->GetAppearanceType() == AppearanceType::CONSTANT)
 	{
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_colour"), 1, (float*) & (data->vec_colour));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "vec_colour"), 1, (float*)&data->vec_colour);
 	}
-	else if (data->GetAppearanceType() == AppearanceType::SPLINE)
+	if (data->GetAppearanceType() == AppearanceType::SPLINE)
 	{
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_r"), 8, (float*) & (data->colour[0].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_g"), 8, (float*) & (data->colour[1].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_b"), 8, (float*) & (data->colour[2].controlPoints));
-		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_a"), 8, (float*) & (data->colour[3].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_r"), 8, (float*)&(data->colour[0].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_g"), 8, (float*)&(data->colour[1].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_b"), 8, (float*)&(data->colour[2].controlPoints));
+		glUniform4fv(glGetUniformLocation(shader_compute->GetProgram(), "spline_colour_a"), 8, (float*)&(data->colour[3].controlPoints));
 	}
 
 	glUniformMatrix4fv(glGetUniformLocation(shader_compute->GetProgram(), "modelMatrix"), 1, false, model.values);
@@ -499,9 +468,12 @@ void ParticleSystem::Render(Matrix4 model, Matrix4 view, Matrix4 projection)
 {
 	glUseProgram(shader_instance->GetProgram());
 	glUniform1i(glGetUniformLocation(shader_instance->GetProgram(),			"SSBOswitch"), SSBOswitch);
+
 	glUniformMatrix4fv(glGetUniformLocation(shader_instance->GetProgram(),	"modelMatrix"), 1, false, model.values);
 	glUniformMatrix4fv(glGetUniformLocation(shader_instance->GetProgram(),	"viewMatrix"), 1, false, view.values);
 	glUniformMatrix4fv(glGetUniformLocation(shader_instance->GetProgram(),	"projMatrix"), 1, false, projection.values);
+	glUniform1i(glGetUniformLocation(shader_instance->GetProgram(),			"appearanceType"), (int)data->GetAppearanceType());
+
 	if (data->GetAppearanceType() == AppearanceType::TEXTURE)
 	{
 		glUniform1i(glGetUniformLocation(shader_compute->GetProgram(), "tex_display"), 0);

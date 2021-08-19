@@ -219,6 +219,17 @@ void EmitterCube()
 
 void EmitterCone()
 {
+	float randomHeight =  particlesB.particles[gl_GlobalInvocationID.x].random.x * EmissionData.x;
+	float radius = (randomHeight / EmissionData.x) * EmissionData.y;
+	float randomRadius =  particlesB.particles[gl_GlobalInvocationID.x].random.y * radius;
+
+	vec3 dir = vec3((particlesB.particles[gl_GlobalInvocationID.x].random.z * 2 - 1.0f), 0, (particlesB.particles[gl_GlobalInvocationID.x].random.w * 2 - 1.0f)) * randomRadius;
+	dir.y = randomHeight;
+
+	if(SSBOswitch)
+		particlesB.particles[gl_GlobalInvocationID.x].position.xyz = dir;
+	else															
+		particlesA.particles[gl_GlobalInvocationID.x].position.xyz = dir;
 }
 
 void EmissionVelocity()
@@ -228,7 +239,7 @@ void EmissionVelocity()
 		if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.y == 1.0f)
 		{
 			vec3 dir = normalize(particlesB.particles[gl_GlobalInvocationID.x].position.xyz);
-			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
+			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz += dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
 		}
 		else if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.z == 1.0f)
 		{
@@ -238,12 +249,12 @@ void EmissionVelocity()
 			float z = particlesA.particles[gl_GlobalInvocationID.x].random.z * 2.0f - 1.0f;
 		
 			vec3 dir = vec3(x, y, z);
-			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
+			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz += dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
 		}
 		else
 		{
 			vec3 dir = vec3(1, 0, 0);
-			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
+			particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz += dir * particlesA.particles[gl_GlobalInvocationID.x].initvelocity.x;
 		}
 	}
 	else
@@ -251,7 +262,7 @@ void EmissionVelocity()
 		if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.y == 1.0f)
 		{
 			vec3 dir = normalize(particlesA.particles[gl_GlobalInvocationID.x].position.xyz);
-			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
+			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz += dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
 		}
 		else if(particlesA.particles[gl_GlobalInvocationID.x].initvelocity.z == 1.0f)
 		{
@@ -261,12 +272,12 @@ void EmissionVelocity()
 			float z =particlesB.particles[gl_GlobalInvocationID.x].random.z * 2.0f - 1.0f;
 		
 			vec3 dir = vec3(x, y, z);
-			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
+			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz += dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
 		}
 		else
 		{
 			vec3 dir = vec3(1, 0, 0);
-			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
+			particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz += dir * particlesB.particles[gl_GlobalInvocationID.x].initvelocity.x;
 		}
 	}
 }
@@ -299,14 +310,14 @@ void ResetParticle()
 {
 	particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = vec3(0,0,0);
 	particlesA.particles[gl_GlobalInvocationID.x].force.xyz = particlesA.particles[gl_GlobalInvocationID.x].initforce.xyz;	
-	particlesA.particles[gl_GlobalInvocationID.x].velocity.w = 0.0;
+	particlesA.particles[gl_GlobalInvocationID.x].velocity.xyzw = vec4(0.f, 0.f, 0.f, 0.f);
 	particlesA.particles[gl_GlobalInvocationID.x].force.w = 0.0;
 	particlesA.particles[gl_GlobalInvocationID.x].position.w = 1.0;
 	particlesA.particles[gl_GlobalInvocationID.x].collision.y = 0.0;
 
 	particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = vec3(0,0,0);
 	particlesB.particles[gl_GlobalInvocationID.x].force.xyz = particlesB.particles[gl_GlobalInvocationID.x].initforce.xyz;
-	particlesB.particles[gl_GlobalInvocationID.x].velocity.w = 0.0;
+	particlesB.particles[gl_GlobalInvocationID.x].velocity.xyzw = vec4(0.f, 0.f, 0.f, 0.f);
 	particlesB.particles[gl_GlobalInvocationID.x].force.w = 0.0;
 	particlesB.particles[gl_GlobalInvocationID.x].position.w = 1.0;
 	particlesB.particles[gl_GlobalInvocationID.x].collision.y = 0.0;
@@ -397,10 +408,9 @@ vec3 GetForce()
 
 	else
 		return GetSplineForce();
-
 }
 
-vec3 GetLinearVelocity()
+vec3 GetVelocityLinear()
 {
 	if(types.y == 0)
 		return vec_velocity_linear;
@@ -415,15 +425,15 @@ void IntegrateAcceleration()
 {
 	if(SSBOswitch)
 	{
-		vec3 dVel = GetSplineForce() * dt;
-		vec3 vel = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + GetSplineVelocityLinear() + dVel;
+		vec3 dVel = GetForce() * dt;
+		vec3 vel = particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz + GetVelocityLinear() + dVel;
 		particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz = vel;
 	}
 
 	else
 	{
-		vec3 dVel = GetSplineForce() * dt;
-		vec3 vel = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + GetSplineVelocityLinear() + dVel;
+		vec3 dVel = GetForce() * dt;
+		vec3 vel = particlesB.particles[gl_GlobalInvocationID.x].velocity.xyz + GetVelocityLinear() + dVel;
 		particlesA.particles[gl_GlobalInvocationID.x].velocity.xyz = vel;
 	}
 }
@@ -515,13 +525,13 @@ vec4 GetColour()
 
 	else
 		return GetSplineColour();
-
 }
 
 void CalculateColour()
 {
 	if(SSBOswitch)
 	{
+		
 		particlesB.particles[gl_GlobalInvocationID.x].colour = GetColour();
 
 		if(particlesA.particles[gl_GlobalInvocationID.x].position.w != 1.f)
@@ -531,6 +541,7 @@ void CalculateColour()
 	else
 	{
 		particlesA.particles[gl_GlobalInvocationID.x].colour = GetColour();
+
 
 		if(particlesB.particles[gl_GlobalInvocationID.x].position.w != 1.f)
 			particlesA.particles[gl_GlobalInvocationID.x].colour.a = 0.f;
@@ -605,7 +616,5 @@ void main(void)
 		CollisionDetection();
 
 	UpdateLifeTime();
-
-	if(particlesA.particles[gl_GlobalInvocationID.x].collision.y != 1.0f)
-		CalculateColour();	
+	CalculateColour();	
 }

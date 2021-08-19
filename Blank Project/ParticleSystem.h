@@ -58,7 +58,7 @@ public:
 	ParticleSystemData();
 
 
-	ParticleSystemData(Mesh* m, int instances, float lTime, float eTime, EmitterType eType, Vector3 eData, MotionType mType, AppearanceType aType,unsigned int depthTex, unsigned int normalTex);
+	ParticleSystemData(Mesh* m, int instances, float lTime, float eTime, EmitterType eType, Vector3 eData, MotionType mType, AppearanceType aType, bool collision,unsigned int depthTex, unsigned int normalTex);
 
 
 	~ParticleSystemData()
@@ -68,7 +68,7 @@ public:
 
 	bool velocityWorldSpace;
 	bool forceWorldSpace;
-
+	bool collision;
 	Vector3		initialForce;
 	Spline		force[3];
 

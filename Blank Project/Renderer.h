@@ -2,7 +2,7 @@
 #include "../NCLGL/OGLRenderer.h"
 #include "../nclgl/Camera.h"
 #include "../nclgl/Frustum.h"
-//#include "../nclgl/ComputeShader.h"
+#include "../nclgl/ComputeShader.h"
 
 #include "ParticleSystem.h"
 class Renderer : public OGLRenderer {
@@ -20,16 +20,21 @@ public:
 	
 protected:
 
-	//const static int NUM_OF_X = 4;
-	//const static int NUM_OF_Y = 4;
+	float nx, ny, nz;
+
+	const static int NUM_OF_INSTANCES = 6000000;	
+	const static int NUM_OF_Y = 100;
+	const static int NUM_OF_X = NUM_OF_INSTANCES / NUM_OF_Y;
 	//const static int NUM_OF_Z = 4;
 	//const static int NUM_IN_GRID = NUM_OF_X * NUM_OF_Y * NUM_OF_Z;
 
-	const static int NUM_OF_INSTANCES = 100000;
 	Camera* camera;
 	
 	ParticleSystemData* psData_A;
 	ParticleSystemData* psData_B;
+	ParticleSystemData* psData_C;
+	ParticleSystemData* psData_D;
+	ParticleSystemData* psData_constantVelocity;
 
 	ParticleSystem* particleSystem;
 
@@ -40,13 +45,16 @@ protected:
 	Mesh* screenQuad;
 	//Mesh* quads[NUM_IN_GRID];
 	Vector3 position;
-	Vector2 offsets[NUM_OF_INSTANCES];
+	//Vector2 offsets[NUM_OF_INSTANCES];
 
 	Shader* basicShader;
+	Shader* basicInstanceShader;
 	Shader* shader_opaque;
 	Shader* OITShader;
 	Shader* finalPassShader;
 	Shader* shader_noise;
+
+	GLuint tex_display;
 
 	GLuint FBO_opaque;
 	GLuint tex_opaque;
@@ -61,8 +69,7 @@ protected:
 	unsigned int FBO_noise;
 	unsigned int tex_noise;
 
+	GLuint SSBO_test;
 	ComputeShader* basicComputeShader;
-
-	GLuint SSBO_Test;
 
 };

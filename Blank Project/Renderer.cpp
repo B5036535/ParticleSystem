@@ -12,6 +12,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	screenQuad = Mesh::GenerateQuad();
 	float offset = 10.f;
 	int i = 0;
+
+	//-----For OIT test scene-----
 	//for (int x = 0; x < NUM_OF_X; x++)
 	//{
 	//	for (int y = 0; y < NUM_OF_Y; y++)
@@ -31,6 +33,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 
 	basicShader = new Shader("vertex_basic.glsl", "fragment_basic.glsl");
+	basicComputeShader = new ComputeShader("compute_basic.glsl");
+	basicInstanceShader = new Shader("vertex_basicInstanced.glsl", "fragment_basic.glsl");
 	shader_opaque = new Shader("vertex_opaque.glsl", "fragment_opaque.glsl");
 	OITShader = new Shader("vertex_basicOIT.glsl", "fragment_OIT.glsl");
 	finalPassShader = new Shader("vertex_OITFinalPass.glsl", "fragment_OITFinalPass.glsl");
@@ -97,10 +101,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_noise, 0);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	//basicComputeShader = new ComputeShader("compute_basic.glsl");
 
-	psData_A = new ParticleSystemData(quad, 100000, 5.f, 5.0f, EmitterType::SPHERE, Vector3(3,3,3), MotionType::SPLINE, AppearanceType::SPLINE, tex_depth_linear, tex_normal);
-	psData_A->FillInitialForceAndVelocity(Vector3(), Vector3(50.f, 1.f, 0.f));
+	psData_A = new ParticleSystemData(sphere, 100000, 5.f, 5.0f, EmitterType::SPHERE, Vector3(3,3,3), MotionType::SPLINE, AppearanceType::SPLINE, false, tex_depth_linear, tex_normal);
+	psData_A->FillInitialForceAndVelocity(Vector3(), Vector3(100.f, 1.f, 1.f));
 	Vector2 array_colour_r[8] = 
 	{
 			Vector2(-0.1f, 0.0f),
@@ -113,7 +116,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.3f),
 	};
 	Spline spline_colour_r = Spline (array_colour_r);
-
+	
 	Vector2 array_colour_g[8] =
 	{
 			Vector2(-0.1f, 0.0f),
@@ -126,7 +129,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.3f),
 	};
 	Spline spline_colour_g = Spline(array_colour_g);
-
+	
 	Vector2 array_colour_b[8] =
 	{
 			Vector2(-0.1f, 0.5f),
@@ -139,7 +142,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.7f),
 	};
 	Spline spline_colour_b = Spline(array_colour_b);
-
+	
 	Vector2 array_colour_a[8] =
 	{
 			Vector2(-0.1f, 0.5f),
@@ -153,7 +156,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	};
 	Spline spline_colour_a = Spline(array_colour_a);
 	psData_A->FillSplineColour(spline_colour_r, spline_colour_g, spline_colour_b, spline_colour_a);
-
+	
 	Vector2 array_velocity_linear_x[8] =
 	{
 			Vector2(-0.1f, 0.5f),
@@ -166,11 +169,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.7f),
 	};
 	Spline spline_velocity_linear_x = Spline(array_velocity_linear_x);
-
+	
 	Vector2 array_velocity_linear_y[8] =
 	{
 			Vector2(-0.1f, 1.0f),
-			Vector2(0.f, 5.0f),
+			Vector2(0.f, 10.0f),
 			Vector2(0.2f, 5.0f),
 			Vector2(0.5f, 0.0f),
 			Vector2(0.6f, 0.0f),
@@ -179,7 +182,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.7f),
 	};
 	Spline spline_velocity_linear_y = Spline(array_velocity_linear_y);
-
+	
 	Vector2 array_velocity_linear_z[8] =
 	{
 			Vector2(-0.1f, 0.0f),
@@ -192,12 +195,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.0f),
 	};
 	Spline spline_velocity_linear_z = Spline(array_velocity_linear_z);
-
+	
 	spline_velocity_linear_x *= 1.f;
 	spline_velocity_linear_y *= 1.f;
 	spline_velocity_linear_z *= 1.f;
 	psData_A->FillSplineVelocityLinear(spline_velocity_linear_x, spline_velocity_linear_y, spline_velocity_linear_z);
-
+	
 	Vector2 array_velocity_orbital_x[8] =
 	{
 			Vector2(-0.1f, 0.5f),
@@ -210,7 +213,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.7f),
 	};
 	Spline spline_velocity_orbital_x = Spline(array_velocity_orbital_x);
-
+	
 	Vector2 array_velocity_orbital_y[8] =
 	{
 			Vector2(-0.1f, 0.5f),
@@ -223,7 +226,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.7f),
 	};
 	Spline spline_velocity_orbital_y = Spline(array_velocity_orbital_y);
-
+	
 	Vector2 array_velocity_orbital_z[8] =
 	{
 			Vector2(-0.1f, 0.5f),
@@ -236,7 +239,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, -10.7f),
 	};
 	Spline spline_velocity_orbital_z = Spline(array_velocity_orbital_z);
-
+	
 	Vector2 array_velocity_orbital_r[8] =
 	{
 			Vector2(-0.1f, 0.5f),
@@ -250,7 +253,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	};
 	Spline spline_velocity_orbital_r = Spline(array_velocity_orbital_r);
 	psData_A->FillSplineVelocityOrbital(spline_velocity_orbital_x, spline_velocity_orbital_y, spline_velocity_orbital_z, spline_velocity_orbital_r);
-
+	
 	Vector2 array_force_x[8] =
 	{
 			Vector2(-0.1f, 0.0f),
@@ -276,7 +279,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 			Vector2(1.85f, 0.7f),
 	};
 	Spline spline_force_y = Spline(array_force_y);
-
+	
 	Vector2 array_force_z[8] =
 	{
 			Vector2(-0.1f, 0.0f),
@@ -294,32 +297,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	spline_force_z *= 1.f;
 	
 	psData_A->FillSplineForce(spline_force_x, spline_force_y, spline_force_z);
-
-	//std::cout << "----------psData_A----------" << std::endl << std::endl;
-	//for (float t = 0.f; t <= 1.0f; t += 0.01f)
-	//{
-	//	std::cout << "spline_colour_r: " << spline_colour_r.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_colour_b: " << spline_colour_b.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_colour_g: " << spline_colour_g.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_colour_a: " << spline_colour_a.GetSplineValue(t) << std::endl;
-	//
-	//	std::cout << std::endl;
-	//
-	//	std::cout << "spline_velocity_linear_x: " << spline_velocity_linear_x.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_velocity_linear_y: " << spline_velocity_linear_y.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_velocity_linear_z: " << spline_velocity_linear_z.GetSplineValue(t) << std::endl;
-	//
-	//	std::cout << std::endl;
-	//
-	//	std::cout << "spline_force_x: " << spline_force_x.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_force_y: " << spline_force_y.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_force_z: " << spline_force_z.GetSplineValue(t) << std::endl;
-	//
-	//	std::cout << std::endl;
-	//}
+	
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	psData_B = new ParticleSystemData(quad, 100000, 8.f, 100.0f, EmitterType::CUBE, Vector3(2, 2, 2), MotionType::SPLINE, AppearanceType::SPLINE,tex_depth_linear, tex_normal);
+	psData_B = new ParticleSystemData(quad, 900000, 5.f, 100.0f, EmitterType::CUBE, Vector3(1, 1, 1), MotionType::SPLINE, AppearanceType::SPLINE, true ,tex_depth_linear, tex_normal);
 	psData_B->FillInitialForceAndVelocity(Vector3(), Vector3(50.f, 0.f, 1.f));
 	
 	array_colour_r[0] = Vector2(-0.1f, 0.0f);
@@ -332,7 +313,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_colour_r[7] = Vector2(1.85f, 0.3f);
 	
 	spline_colour_r = Spline(0.7f);
-
+	
 	
 	array_colour_g[0] = Vector2(-0.1f, 0.0f);
 	array_colour_g[1] = Vector2(0.f, 1.0f);
@@ -344,7 +325,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_colour_g[7] = Vector2(1.85f, 0.3f);
 	
 	spline_colour_g = Spline(0.7f);
-
+	
 	
 	array_colour_b[0] = Vector2(-0.1f, 0.5f);
 	array_colour_b[1] = Vector2(0.f, 0.5f);
@@ -356,8 +337,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_colour_b[7] = Vector2(1.85f, 0.7f);
 	
 	spline_colour_b = Spline(0.7f);
-
-
+	
+	
 	array_colour_a[0] = Vector2(-0.1f, 0.1f);	
 	array_colour_a[1] = Vector2(0.f, 1.0f);		
 	array_colour_a[2] = Vector2(0.2f, 1.0f);
@@ -369,8 +350,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 													
 	spline_colour_a = Spline(array_colour_a);
 	psData_B->FillSplineColour(spline_colour_r, spline_colour_g, spline_colour_b, spline_colour_a);
-
-
+	
+	
 	array_velocity_linear_x[0] = Vector2(-0.1f, 0.5f);
 	array_velocity_linear_x[1] = Vector2(0.f, 0.0f);
 	array_velocity_linear_x[2] = Vector2(0.2f, 0.0f);
@@ -381,7 +362,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_velocity_linear_x[7] = Vector2(1.85f, 0.7f);
 	
 	spline_velocity_linear_x = Spline(2.f);
-
+	
 	array_velocity_linear_y[0] = Vector2(-0.1f, 0.0f);
 	array_velocity_linear_y[1] = Vector2(0.f, 0.0f);
 	array_velocity_linear_y[2] = Vector2(0.1f, 0.0f);
@@ -392,8 +373,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_velocity_linear_y[7] = Vector2(1.85f, 1.7f);
 	
 	spline_velocity_linear_y = Spline(array_velocity_linear_y);
-
-
+	
+	
 	array_velocity_linear_z[0] = Vector2(-0.1f, 0.0f);
 	array_velocity_linear_z[1] = Vector2(0.f, 0.0f);
 	array_velocity_linear_z[2] = Vector2(0.2f, 0.0f);
@@ -404,12 +385,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_velocity_linear_z[7] = Vector2(1.85f, 0.0f);
 	
 	spline_velocity_linear_z = Spline(0.f);
-
+	
 	spline_velocity_linear_x *= 1.f;
 	spline_velocity_linear_y *= 1.f;
 	spline_velocity_linear_z *= 1.f;
 	psData_B->FillSplineVelocityLinear(spline_velocity_linear_x, spline_velocity_linear_y, spline_velocity_linear_z);
-
+	
 	
 	array_velocity_orbital_x[0] = Vector2(-0.1f, 0.5f);
 	array_velocity_orbital_x[1] = Vector2(0.f, 0.0f);
@@ -421,7 +402,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_velocity_orbital_x[7] = Vector2(1.85f, 0.7f);
 	
 	spline_velocity_orbital_x = Spline(array_velocity_orbital_x);
-
+	
 	
 	array_velocity_orbital_y[0] = Vector2(-0.1f, 0.5f);
 	array_velocity_orbital_y[1] = Vector2(0.f, 0.5f);
@@ -433,7 +414,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_velocity_orbital_y[7] = Vector2(1.85f, 0.7f);
 	
 	spline_velocity_orbital_y = Spline(array_velocity_orbital_y);
-
+	
 	
 	array_velocity_orbital_z[0] = Vector2(-0.1f, 0.5f);
 	array_velocity_orbital_z[1] = Vector2(0.f, 30.5f);
@@ -445,7 +426,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_velocity_orbital_z[7] = Vector2(1.85f, -10.7f);
 	
 	spline_velocity_orbital_z = Spline(array_velocity_orbital_z);
-
+	
 	
 	array_velocity_orbital_r[0] = Vector2(-0.1f, 0.5f);
 	array_velocity_orbital_r[1] = Vector2(0.f, 30.5f);
@@ -458,7 +439,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	
 	spline_velocity_orbital_r = Spline(array_velocity_orbital_r);
 	psData_B->FillSplineVelocityOrbital(spline_velocity_orbital_x, spline_velocity_orbital_y, spline_velocity_orbital_z, spline_velocity_orbital_r);
-
+	
 	
 	array_force_x[0] = Vector2(-0.1f, -1.0f);
 	array_force_x[1] = Vector2(0.f, -1.0f);
@@ -470,7 +451,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_force_x[7] = Vector2(1.85f, -20.0f);
 	
 	spline_force_x = Spline(array_force_x);
-
+	
 	
 	array_force_y[0] = Vector2(-0.1f, 0.0f);
 	array_force_y[1] = Vector2(0.f, 0.0f);
@@ -482,7 +463,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	array_force_y[7] = Vector2(1.85f, -2.7f);
 	
 	spline_force_y = Spline(0.f);
-
+	
 	
 	array_force_z[0] = Vector2(-0.1f, 0.0f);
 	array_force_z[1] = Vector2(0.f, 0.0f);
@@ -497,37 +478,36 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	spline_force_x *= 1.f;
 	spline_force_y *= 1.f;
 	spline_force_z *= 1.f;
-
+	
 	psData_B->FillSplineForce(spline_force_x, spline_force_y, spline_force_z);
+	
+	tex_display = SOIL_load_OGL_texture(TEXTUREDIR"SkyScraper2048.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
-	//std::cout << std::endl << "----------psData_B----------" << std::endl << std::endl;
-	//for (float t = 0.f; t <= 1.0f; t += 0.01f)
-	//{
-	//	std::cout << "spline_colour_r: " << spline_colour_r.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_colour_b: " << spline_colour_b.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_colour_g: " << spline_colour_g.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_colour_a: " << spline_colour_a.GetSplineValue(t) << std::endl;
-	//
-	//	std::cout << std::endl;
-	//
-	//	std::cout << "spline_velocity_linear_x: " << spline_velocity_linear_x.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_velocity_linear_y: " << spline_velocity_linear_y.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_velocity_linear_z: " << spline_velocity_linear_z.GetSplineValue(t) << std::endl;
-	//
-	//	std::cout << std::endl;
-	//
-	//	std::cout << "spline_force_x: " << spline_force_x.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_force_y: " << spline_force_y.GetSplineValue(t) << std::endl;
-	//	std::cout << "spline_force_z: " << spline_force_z.GetSplineValue(t) << std::endl;
-	//
-	//	std::cout << std::endl;
-	//}
+	psData_constantVelocity = new ParticleSystemData(quad, NUM_OF_INSTANCES, 100.f, 8.f, EmitterType::CUBE, Vector3(100.f, 1000.f, 20.f), MotionType::CONSTANT, AppearanceType::CONSTANT, false, tex_depth_linear, tex_normal);
+	psData_constantVelocity->ConstantMotion(Vector3(0.1f, 0.1f, 0.1f), Vector3(0.1f, 0.1f, 0.1f));
+	//psData_constantVelocity->FillSplineForce(spline_force_x, spline_force_y, spline_force_z);
+	//psData_constantVelocity->FillSplineVelocityLinear(spline_velocity_linear_x, spline_velocity_linear_y, spline_velocity_linear_z);
+	//psData_constantVelocity->FillSplineVelocityOrbital(spline_velocity_linear_x, spline_velocity_linear_y, spline_velocity_linear_z, spline_velocity_orbital_r);
+	psData_constantVelocity->ConstantAppearance(Vector4(1.0f, 0.5f, 0.0f, 1.0f));
+	//psData_constantVelocity->FillSplineColour(spline_colour_r, spline_colour_g, spline_colour_b, spline_colour_a);
+	//psData_constantVelocity->TexturedAppearance(tex_display);
+	psData_constantVelocity->FillInitialForceAndVelocity(Vector3(), Vector3(50.f, 0.f, 1.f));
+
+	
+
+	psData_C = new ParticleSystemData(quad, 50000, 0.5f, 0.2f, EmitterType::HEMISPHERE, Vector3(1,1,1), MotionType::CONSTANT, AppearanceType::CONSTANT, false, tex_depth_linear, tex_normal);
+	psData_C->ConstantMotion(Vector3(0.1f, 0.1f, 0.1f), Vector3(0.1f, 0.1f, 0.1f));
+	psData_C->ConstantAppearance(Vector4(0.5f,0.5f,1.0f, 1.0f));
+	psData_C->FillInitialForceAndVelocity(Vector3(), Vector3(1000.f, 1.f, 1.f));
+
+	psData_D = new ParticleSystemData(quad, 10000, 5.f, 10.f, EmitterType::CUBE, Vector3(1000, 10, 1000), MotionType::CONSTANT, AppearanceType::CONSTANT, false, tex_depth_linear, tex_normal);
+	psData_D->ConstantMotion(Vector3(0.0f, -50.0f, 0.1f), Vector3(0.0f, 0.1f, 0.1f));
+	psData_D->ConstantAppearance(Vector4(1.f, 1.f, 1.0f, 1.0f));
+	psData_D->FillInitialForceAndVelocity(Vector3(), Vector3(10.f, 0.f, 1.f));
+	particleSystem = new ParticleSystem(psData_D);
 
 
-	particleSystem = new ParticleSystem(psData_B);
-
-
-	if (!basicShader->LoadSuccess() || !OITShader->LoadSuccess() || !finalPassShader->LoadSuccess())
+	if (!basicShader->LoadSuccess() || !OITShader->LoadSuccess() || !finalPassShader->LoadSuccess() || !basicInstanceShader->LoadSuccess())
 	{
 		return;
 	}
@@ -538,7 +518,35 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
+   
+	//---- For initial tests of CPU rendering -----
+	//Vector2* offsets = new Vector2[NUM_OF_INSTANCES];
+	//   
+	//int instance = 0;
+	//for (int x = 0; x < NUM_OF_X; x++)
+	//{
+	//	for (int y = 0; y < NUM_OF_Y; y++)
+	//	{
+	//		offsets[instance].x = x * 10.f;
+	//		offsets[instance].y = y * 10.f;
+	//		instance++;
+	//	}
+	//}
+	//
+	//glGenBuffers(1, &SSBO_test);
+	//
+	//glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_test);
+	//glBufferData(GL_SHADER_STORAGE_BUFFER, NUM_OF_INSTANCES * sizeof(Vector2), offsets, GL_STREAM_DRAW);
+	//glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 6, SSBO_test, 0, sizeof(Particle) * NUM_OF_INSTANCES);
+	
+	//delete[] offsets;
 
+	//nx = 0.f;
+	//ny = 0.f;
+	//nz = 0.f;
+
+	glUseProgram(0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	init = true;
 }
 Renderer::~Renderer(void) 
@@ -556,12 +564,27 @@ Renderer::~Renderer(void)
 	//delete[] quads;
 	delete screenQuad;
 	delete basicShader;
+	delete basicInstanceShader;
 	delete OITShader;
 	delete finalPassShader;
-	//delete particleSystem;
+	delete particleSystem;
 	delete psData_A;
 	delete psData_B;
-	//delete basicComputeShader;
+	delete psData_constantVelocity;
+	delete basicComputeShader;
+
+	glDeleteTextures(1, &tex_accumulation);
+	glDeleteTextures(1, &tex_reveal);
+	glDeleteTextures(1, &tex_opaque);
+	glDeleteTextures(1, &tex_depth_linear);
+	glDeleteTextures(1, &tex_depth_exponential);
+	glDeleteTextures(1, &tex_noise);
+	glDeleteTextures(1, &tex_display);
+
+	glDeleteFramebuffers(1, &FBO_noise);
+	glDeleteFramebuffers(1, &FBO_OIT);
+	glDeleteFramebuffers(1, &FBO_opaque);
+	glDeleteFramebuffers(1, &SSBO_test);
 }
 
 void Renderer::UpdateScene(float dt) 
@@ -571,6 +594,14 @@ void Renderer::UpdateScene(float dt)
 	modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(0.01f, 0.01f, 0.01f));
 	camera->UpdateCamera(dt);
 	particleSystem->Update(dt, modelMatrix, viewMatrix, projMatrix);
+	
+	//----- For initial tests of CPU rendering ------
+	//for (int i = 0; i < NUM_OF_INSTANCES; i++)
+	//{
+	//	nx += 0.1f;
+	//	ny += 0.1f;
+	//	nz += 0.1f;
+	//}
 
 	//glUseProgram(basicComputeShader->GetProgram());
 	//basicComputeShader->Dispatch(NUM_OF_INSTANCES, 1, 1);
@@ -612,7 +643,7 @@ void Renderer::RenderOITTestScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-	//glBlendFunc( GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA );//
+
 	
 	glUseProgram(finalPassShader->GetProgram());
 	
@@ -643,7 +674,6 @@ void Renderer::RenderOpaqueScene()
 	glClearBufferfv(GL_COLOR, 2, (float*)&glf);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glUseProgram(shader_opaque->GetProgram());
-	//glUseProgram(basicShader->GetProgram());//
 	glUniform1f(glGetUniformLocation(shader_opaque->GetProgram(), "near"), 1.0f);
 	glUniform1f(glGetUniformLocation(shader_opaque->GetProgram(), "far"), 15000.0f);
 
@@ -651,22 +681,17 @@ void Renderer::RenderOpaqueScene()
 	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
 	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);
 	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "projMatrix"), 1, false, projMatrix.values);	
-	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
-	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);	 //
-	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "projMatrix"), 1, false, projMatrix.values);	 //
 	quad->Draw();
 	modelMatrix = Matrix4::Translation(Vector3(0, 0, -250.f)) * Matrix4::Scale(Vector3(50.0, 50.0, 50.0));
 	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
-	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
 	quad->Draw();
 	modelMatrix = Matrix4::Translation(Vector3(-100, 0, -1500)) * Matrix4::Scale(Vector3(10.0, 10.0, 10.0));
 	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
-	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
 	sphere->Draw();
 	modelMatrix = Matrix4::Translation(Vector3(100, 0, -100)) * Matrix4::Scale(Vector3(20.0, 20.0, 20.0)) * Matrix4::Rotation(30.f, Vector3(1,1,1));
 	glUniformMatrix4fv(glGetUniformLocation(shader_opaque->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
-	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);//
 	box->Draw();
+	
 	glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -679,7 +704,6 @@ void Renderer::RenderNoise()
 	glClear(GL_COLOR_BUFFER_BIT);
 	glUniform2fv(glGetUniformLocation(shader_noise->GetProgram(), "u_resolution"), 1, (float*)&Vector2(256, 256));
 	glUniform2fv(glGetUniformLocation(shader_noise->GetProgram(), "u_randomSeed"), 1, (float*)&Vector2(static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX)));
-	//glUniform2fv(glGetUniformLocation(shader_noise->GetProgram(), "u_randomSeed"), 1, (float*)&Vector2(1, 1));
 	glUniform1f(glGetUniformLocation(shader_noise->GetProgram(), "u_time"), std::time(0));
 	quad->Draw();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -695,6 +719,31 @@ void Renderer::RenderScene()
 	viewMatrix = camera->BuildViewMatrix();
 	RenderOpaqueScene();
 	modelMatrix = Matrix4::Translation(position) * Matrix4::Scale(Vector3(0.01f, 0.01f, 0.01f));
+
+
+
+	//-------- For initial CPU and GPU tests --------
+	//glUseProgram(basicInstanceShader->GetProgram());
+	//glUniformMatrix4fv(glGetUniformLocation(basicInstanceShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+	//glUniformMatrix4fv(glGetUniformLocation(basicInstanceShader->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);
+	//glUniformMatrix4fv(glGetUniformLocation(basicInstanceShader->GetProgram(), "projMatrix"), 1, false, projMatrix.values);
+	//quad->DrawInstance(NUM_OF_INSTANCES);
+	//glUseProgram(0);
+
+
+	//glUseProgram(basicShader->GetProgram());
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "viewMatrix"), 1, false, viewMatrix.values);
+	//glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "projMatrix"), 1, false, projMatrix.values);
+	//
+	//for (int i = 0; i < NUM_OF_INSTANCES; i++)
+	//{
+	//	modelMatrix = Matrix4::Translation(position + Vector3(i * 0.5f, 0 ,0)) * Matrix4::Scale(Vector3(0.01f, 0.01f, 0.01f));
+	//	glUniformMatrix4fv(glGetUniformLocation(basicShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+	//	quad->Draw();
+	//}
+	//glUseProgram(0);
+
+
 	particleSystem->Render(modelMatrix, viewMatrix, projMatrix);
 	//RenderOITTestScene();
 	//RenderNoise();

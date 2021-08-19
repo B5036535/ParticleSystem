@@ -14,7 +14,7 @@ out vec4 fragColour;
 
 void main (void)
 {
-	if(appearanceType == 2 && IN.enabled == 1.f)
+	if(appearanceType == 1 && IN.enabled == 1.f)
 		fragColour = texture2D(displayTex, IN.texCoord);
 	else
 		fragColour = IN.colour;
