@@ -26,6 +26,15 @@ public:
 		this->w = w;
 	}
 
+	Vector4(Vector3& vec, float w)
+	{
+		x = vec.x;
+		y = vec.y;
+		z = vec.z;
+
+		this->w = w;
+	}
+
 	Vector3 ToVector3() {
 		return Vector3(x, y, z);
 	}

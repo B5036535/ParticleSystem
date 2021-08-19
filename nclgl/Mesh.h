@@ -87,6 +87,9 @@ public:
 	bool GetSubMesh(int i, const SubMesh* s) const;
 	bool GetSubMesh(const std::string& name, const SubMesh* s) const;
 
+
+	void UpdateColour(Vector4 colour);
+
 protected:
 	void	BufferData();
 

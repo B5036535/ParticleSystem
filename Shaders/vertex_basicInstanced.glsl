@@ -5,6 +5,7 @@ uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 in vec3 position;
 in vec4 colour;
+in vec2 texCoord;
 
 layout (std430, binding  = 6) buffer SSBOStruct
 {
@@ -14,6 +15,7 @@ layout (std430, binding  = 6) buffer SSBOStruct
 out Vertex
 {
 	vec4 colour;
+	vec2 texCoord;
 } OUT;
 
 void main(void)
@@ -29,4 +31,5 @@ void main(void)
 	gl_Position = (projMatrix * viewMatrix * modelMatrix) * vec4(pos, 1.0);
 
 	OUT.colour = colour;
+	OUT.texCoord = texCoord;
 }

@@ -132,8 +132,13 @@ Mesh* Mesh::GenerateQuad()	{
 	m->normals = new Vector3[m->numVertices];
 	m->tangents = new Vector4[m->numVertices];
 
+	m->colours[0] = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+	m->colours[1] = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
+	m->colours[2] = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
+	m->colours[3] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+
+
 	for(int i = 0; i < 4; ++i) {
-		m->colours[i] = Vector4(1.0f, 1.0f,1.0f,1.0f);
 		m->normals[i] = Vector3(0.0f, 0.0f,-1.0f);
 		m->tangents[i] = Vector4(1.0f, 0.0f,0.0f, 1.0f);
 	}
@@ -601,4 +606,15 @@ bool Mesh::GetSubMesh(const string& name, const SubMesh* s) const {
 		}
 	}
 	return false;
+}
+
+void Mesh::UpdateColour(Vector4 colour)
+{
+	for (int i = 0; i < 4; i++)
+		colours[i] = colour;
+
+	glBindVertexArray(arrayObject);
+	UploadAttribute(&bufferObject[COLOUR_BUFFER], numVertices, sizeof(Vector4), 4, COLOUR_BUFFER, colours, "Colours");
+	glBindVertexArray(0);
+
 }
